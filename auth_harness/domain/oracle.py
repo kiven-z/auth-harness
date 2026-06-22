@@ -1,4 +1,4 @@
-"""对比 DB oracle 与 Redis 画像。"""
+"""DB oracle 与 Redis 画像对比。"""
 
 from __future__ import annotations
 
@@ -7,13 +7,15 @@ from typing import Any
 import pymysql
 import redis
 
-from auth_harness.api import ApiClient
 from auth_harness.config import HarnessConfig
-from auth_harness import db as db_mod
-from auth_harness import redis_client as redis_mod
+from auth_harness.infrastructure.api import ApiClient
+from auth_harness.infrastructure import db as db_mod
+from auth_harness.infrastructure import redis_client as redis_mod
 
 
 class OracleMode:
+    """Oracle 数据来源。"""
+
     API = "api"
     SQL = "sql"
 
@@ -73,6 +75,7 @@ def reconcile_user(
     user_id: int,
     mode: str = OracleMode.API,
 ) -> list[str]:
+    """对比单个用户的 DB oracle 与 Redis 画像。"""
     oracle = load_oracle(config, conn, api, user_id, mode)
     redis_raw = redis_mod.load_profile(rds, user_id)
     return compare_profiles(oracle, redis_raw)

@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import yaml
 
-HARNESS_ROOT = Path(__file__).resolve().parent.parent
+from auth_harness.domain.paths import EXAMPLE_CONFIG_PATH, HARNESS_ROOT
+
 DEFAULT_CONFIG_PATH = HARNESS_ROOT / "config.yml"
-EXAMPLE_CONFIG_PATH = HARNESS_ROOT / "config.example.yml"
 
 
 @dataclass

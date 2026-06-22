@@ -5,14 +5,11 @@ from __future__ import annotations
 import random
 import time
 
-import pymysql
-import redis
-
-from auth_harness.api import ApiClient
 from auth_harness.config import HarnessConfig
-from auth_harness import db as db_mod
-from auth_harness import redis_client as redis_mod
-from auth_harness.oracle import OracleMode, reconcile_user
+from auth_harness.domain.oracle import OracleMode, reconcile_user
+from auth_harness.infrastructure.api import ApiClient
+from auth_harness.infrastructure import db as db_mod
+from auth_harness.infrastructure import redis_client as redis_mod
 
 
 def reconcile_many(

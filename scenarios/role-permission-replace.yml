@@ -5,7 +5,7 @@ steps:
       role_id: 9000200004
       permission_ids: [9000300001]
   - wait_outbox:
-      source_biz_id_contains: "9000200004"
+      source_biz_id_contains: "assign-permissions:R_SHARED"
       timeout_sec: 60
   - assert:
       users:

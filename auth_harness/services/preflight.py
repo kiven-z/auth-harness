@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import requests
 
-from auth_harness.api import ApiClient
 from auth_harness.config import HarnessConfig
-from auth_harness import db as db_mod
-from auth_harness import redis_client as redis_mod
+from auth_harness.infrastructure.api import ApiClient
+from auth_harness.infrastructure import db as db_mod
+from auth_harness.infrastructure import redis_client as redis_mod
 
-# actuator 受 Spring Security 保护时可能返回 401/403，仍表示进程已启动并在响应
 _SERVICE_OK_STATUS_CODES = frozenset({200, 401, 403})
 
 

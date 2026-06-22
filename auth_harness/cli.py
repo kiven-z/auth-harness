@@ -6,12 +6,13 @@ from pathlib import Path
 
 import click
 
-from auth_harness.config import HARNESS_ROOT, load_config
-from auth_harness import db as db_mod
-from auth_harness.oracle import OracleMode
-from auth_harness.preflight import run_preflight
-from auth_harness.reconcile import reconcile_many, resolve_user_ids
-from auth_harness.scenarios import SCENARIOS_DIR, run_scenario, run_smoke
+from auth_harness.config import load_config
+from auth_harness.domain.oracle import OracleMode
+from auth_harness.domain.paths import SCENARIOS_DIR
+from auth_harness.infrastructure import db as db_mod
+from auth_harness.runner.scenario_runner import run_scenario, run_smoke
+from auth_harness.services.preflight import run_preflight
+from auth_harness.services.reconcile import reconcile_many, resolve_user_ids
 
 
 @click.group()

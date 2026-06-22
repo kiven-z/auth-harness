@@ -1,4 +1,4 @@
-.PHONY: auth-test install seed smoke reconcile run preflight
+.PHONY: auth-test install seed smoke reconcile run preflight test
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -25,5 +25,8 @@ run: install
 
 preflight: install
 	$(PYTHON) -m auth_harness preflight
+
+test: install
+	$(PYTHON) -m unittest discover -s tests -v
 
 auth-test: smoke

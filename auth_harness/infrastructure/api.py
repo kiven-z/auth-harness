@@ -52,27 +52,34 @@ class ApiClient:
         return token
 
     def ensure_login(self) -> None:
+        """确保已登录。"""
         if not self._access_token:
             self.login()
 
     def put_dept_roles(self, dept_id: int, role_ids: list[int]) -> None:
+        """部门角色全量覆盖。"""
         self.ensure_login()
         url = f"{self.config.system_base_url}/api/system/dept/{dept_id}/roles"
         self._put_json(url, {"roleIds": role_ids})
 
     def put_user_roles(self, user_id: int, role_ids: list[int]) -> None:
+        """用户直连角色全量覆盖。"""
         self.ensure_login()
         url = f"{self.config.system_base_url}/api/system/user-role/{user_id}"
         self._put_json(url, {"roleIds": role_ids})
 
     def post_role_permissions(self, role_id: int, permission_ids: list[int]) -> None:
+        """角色权限全量分配。"""
         self.ensure_login()
         url = f"{self.config.system_base_url}/api/system/role/{role_id}/permissions"
         self._post_json(url, {"permissionIds": permission_ids})
 
     def get_effective_codes(self, user_id: int) -> dict[str, Any]:
         """调用内部 effective-codes（需 X-Internal-JWT）。"""
-        url = f"{self.config.auth_base_url}/api/auth/inner/authorization/principal/{user_id}/effective-codes"
+        url = (
+            f"{self.config.auth_base_url}/api/auth/inner/authorization/principal/"
+            f"{user_id}/effective-codes"
+        )
         headers = {INTERNAL_HEADER: self._issue_internal_service_token()}
         response = self.session.get(url, headers=headers, timeout=30)
         response.raise_for_status()
