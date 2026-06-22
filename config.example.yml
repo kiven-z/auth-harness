@@ -1,0 +1,55 @@
+# 复制为 config.yml 后填写真实连接信息（config.yml 已 gitignore，勿提交密钥）
+#
+# 环境对照（与 auth-server application-{profile}.yml 一致）：
+#   dev  — MySQL auth_admin_base @ 192.168.3.19，Redis db 0
+#   test — MySQL auth_admin_test @ 192.168.3.4，Redis db 1
+# 运行 harness 时，后端服务须使用 SPRING_PROFILES_ACTIVE=test；下方默认值为 test 环境。
+
+urls:
+  # 管理端 API（system 服务或网关）
+  system: http://localhost:20002
+  # auth 服务（内部 effective-codes）
+  auth: http://localhost:20001
+
+mysql:
+  host: 192.168.3.4
+  port: 3306
+  database: auth_admin_test
+  user: dev_user
+  password: CHANGE_ME
+  charset: utf8mb4
+
+redis:
+  host: 192.168.3.4
+  port: 6379
+  db: 1
+  password: ""
+
+admin:
+  username: admin
+  password: CHANGE_ME
+
+internal_jwt:
+  # 与 Nacos auth.common.jwt 一致（HS256）
+  algorithm: HS256
+  issuer: auth-service
+  secret: CHANGE_ME_AT_LEAST_32_BYTES
+  service_id: auth-harness
+
+test_ids:
+  id_min: 9001000001
+  id_max: 9001001000
+  dept_fanout: 9000100001
+  dept_edge: 9000100002
+  u_anchor: 9001000001
+  u_mixed: 9001000002
+  role_user_base: 9000200001
+  role_dept_mgr: 9000200002
+  role_post_op: 9000200003
+  role_shared: 9000200004
+
+wait:
+  outbox_poll_interval_sec: 0.5
+  outbox_timeout_sec: 60
+  reconcile_retry_sec: 2
+  reconcile_max_attempts: 15

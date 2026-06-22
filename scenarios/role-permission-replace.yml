@@ -1,0 +1,18 @@
+name: role-permission-replace
+description: 角色权限全量替换，验证持有该角色的用户 Redis 画像与 DB 一致
+steps:
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300001]
+  - wait_outbox:
+      source_biz_id_contains: "9000200004"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001000002
+          permissions_contain: [harness:user:read]
+          permissions_not_contain: [harness:shared:view]
+      sample_from_dept:
+        dept_id: 9000100002
+        sample_size: 3
+        permissions_contain: [harness:user:read]

@@ -1,0 +1,27 @@
+name: grant-dept-remove
+description: 部门移除 R_DEPT_MGR，验证成员不再拥有部门管理权限（不依赖 grant_table 删除后残留）
+setup:
+  - put_dept_roles:
+      dept_id: 9000100001
+      role_ids: [9000200001, 9000200002]
+  - wait_outbox:
+      source_biz_id_contains: "9000100001"
+      timeout_sec: 60
+steps:
+  - put_dept_roles:
+      dept_id: 9000100001
+      role_ids: [9000200001]
+  - wait_outbox:
+      source_biz_id_contains: "9000100001"
+      timeout_sec: 60
+  - assert:
+      impacted_user_count_min: 1000
+      users:
+        - user_id: 9001000001
+          roles_contain: [R_USER_BASE]
+          roles_not_contain: [R_DEPT_MGR]
+          permissions_not_contain: [harness:dept:manage]
+      sample_from_dept:
+        dept_id: 9000100001
+        sample_size: 5
+        roles_not_contain: [R_DEPT_MGR]

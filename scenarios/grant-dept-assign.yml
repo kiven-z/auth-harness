@@ -1,0 +1,19 @@
+name: grant-dept-assign
+description: 部门全量覆盖角色，追加 R_DEPT_MGR，验证扇出部门成员权限刷新
+steps:
+  - put_dept_roles:
+      dept_id: 9000100001
+      role_ids: [9000200001, 9000200002]
+  - wait_outbox:
+      source_biz_id_contains: "9000100001"
+      timeout_sec: 60
+  - assert:
+      impacted_user_count_min: 1000
+      users:
+        - user_id: 9001000001
+          roles_contain: [R_USER_BASE, R_DEPT_MGR]
+          permissions_contain: [harness:user:read, harness:dept:manage]
+      sample_from_dept:
+        dept_id: 9000100001
+        sample_size: 5
+        roles_contain: [R_DEPT_MGR]
