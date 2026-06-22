@@ -1,0 +1,17 @@
+name: user-dept-move
+description: 用户换部门后权限随新部门授权变化
+steps:
+  - put_user_dept:
+      user_id: 9001001004
+      relation_id: 9002002002
+      dept_id: 9000100002
+      is_primary: true
+      status: 1
+  - wait_outbox:
+      source_biz_id_contains: "update-dept:9001001004"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001001004
+          roles_contain: [R_SHARED, R_POST_OP]
+          permissions_contain: [harness:shared:view]

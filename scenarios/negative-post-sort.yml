@@ -1,0 +1,9 @@
+name: negative-post-sort
+description: 仅改岗位排序不应触发授权失效 outbox
+steps:
+  - update_post_meta:
+      post_id: 9000600001
+      orderNum: 99
+  - assert_no_outbox:
+      source_biz_id_contains: "9000600001"
+      grace_sec: 2

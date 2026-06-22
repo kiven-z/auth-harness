@@ -1,0 +1,13 @@
+name: user-dept-remove
+description: 用户移出部门后失去部门授权角色
+steps:
+  - delete_user_dept:
+      user_id: 9001001002
+      relation_ids: [9002002001]
+  - wait_outbox:
+      source_biz_id_contains: "delete-dept:9001001002"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001001002
+          roles_not_contain: [R_USER_BASE, R_DEPT_MGR]

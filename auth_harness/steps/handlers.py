@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from auth_harness.domain.oracle import OracleMode, reconcile_user
+from auth_harness.infrastructure import db as db_mod
 from auth_harness.steps.context import StepContext
 from auth_harness.steps.registry import DEFAULT_REGISTRY
 from auth_harness.wait.outbox import snapshot_outbox_cursor, wait_outbox_success
@@ -30,6 +32,15 @@ def put_user_roles(ctx: StepContext, params: dict[str, Any]) -> None:
     print(f"[step] put_user_roles user={user_id} roles={role_ids}")
 
 
+@register("put_post_roles")
+def put_post_roles(ctx: StepContext, params: dict[str, Any]) -> None:
+    """岗位角色全量覆盖。"""
+    post_id = int(params["post_id"])
+    role_ids = [int(x) for x in params["role_ids"]]
+    ctx.api.put_post_roles(post_id, role_ids)
+    print(f"[step] put_post_roles post={post_id} roles={role_ids}")
+
+
 @register("post_role_permissions")
 def post_role_permissions(ctx: StepContext, params: dict[str, Any]) -> None:
     """角色权限全量分配。"""
@@ -37,6 +48,133 @@ def post_role_permissions(ctx: StepContext, params: dict[str, Any]) -> None:
     permission_ids = [int(x) for x in params["permission_ids"]]
     ctx.api.post_role_permissions(role_id, permission_ids)
     print(f"[step] post_role_permissions role={role_id}")
+
+
+@register("post_user_dept")
+def post_user_dept(ctx: StepContext, params: dict[str, Any]) -> None:
+    """用户加入部门。"""
+    user_id = int(params["user_id"])
+    dept_id = int(params["dept_id"])
+    ctx.api.post_user_dept(
+        user_id,
+        dept_id,
+        status=int(params.get("status", 1)),
+        is_primary=bool(params.get("is_primary", True)),
+        remark=params.get("remark"),
+    )
+    print(f"[step] post_user_dept user={user_id} dept={dept_id}")
+
+
+@register("put_user_dept")
+def put_user_dept(ctx: StepContext, params: dict[str, Any]) -> None:
+    """更新用户部门关联（含换部门）。"""
+    user_id = int(params["user_id"])
+    relation_id = int(params["relation_id"])
+    dept_id = int(params["dept_id"])
+    ctx.api.put_user_dept(
+        user_id,
+        relation_id,
+        dept_id,
+        status=int(params.get("status", 1)),
+        is_primary=bool(params.get("is_primary", True)),
+        remark=params.get("remark"),
+    )
+    print(f"[step] put_user_dept user={user_id} relation={relation_id} dept={dept_id}")
+
+
+@register("delete_user_dept")
+def delete_user_dept(ctx: StepContext, params: dict[str, Any]) -> None:
+    """用户移出部门。"""
+    user_id = int(params["user_id"])
+    relation_ids = [int(x) for x in params["relation_ids"]]
+    ctx.api.delete_user_depts(user_id, relation_ids)
+    print(f"[step] delete_user_dept user={user_id} relations={relation_ids}")
+
+
+@register("post_user_post")
+def post_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
+    """用户加入岗位。"""
+    user_id = int(params["user_id"])
+    post_id = int(params["post_id"])
+    ctx.api.post_user_post(
+        user_id,
+        post_id,
+        status=int(params.get("status", 1)),
+        is_primary=bool(params.get("is_primary", True)),
+        remark=params.get("remark"),
+    )
+    print(f"[step] post_user_post user={user_id} post={post_id}")
+
+
+@register("delete_user_post")
+def delete_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
+    """用户离开岗位。"""
+    user_id = int(params["user_id"])
+    relation_ids = [int(x) for x in params["relation_ids"]]
+    ctx.api.delete_user_posts(user_id, relation_ids)
+    print(f"[step] delete_user_post user={user_id} relations={relation_ids}")
+
+
+@register("update_dept_meta")
+def update_dept_meta(ctx: StepContext, params: dict[str, Any]) -> None:
+    """更新部门元数据（仅名称/备注等，或显式 parent/status）。"""
+    dept_id = int(params["dept_id"])
+    changes = {k: v for k, v in params.items() if k != "dept_id"}
+    ctx.api.update_dept_meta(dept_id, **changes)
+    print(f"[step] update_dept_meta dept={dept_id} changes={list(changes)}")
+
+
+@register("move_dept")
+def move_dept(ctx: StepContext, params: dict[str, Any]) -> None:
+    """移动部门父节点。"""
+    dept_id = int(params["dept_id"])
+    parent_id = int(params["parent_id"])
+    ctx.api.move_dept(dept_id, parent_id)
+    print(f"[step] move_dept dept={dept_id} parent={parent_id}")
+
+
+@register("update_role_meta")
+def update_role_meta(ctx: StepContext, params: dict[str, Any]) -> None:
+    """更新角色元数据。"""
+    role_id = int(params["role_id"])
+    changes = {k: v for k, v in params.items() if k != "role_id"}
+    ctx.api.update_role_meta(role_id, **changes)
+    print(f"[step] update_role_meta role={role_id} changes={list(changes)}")
+
+
+@register("update_permission_meta")
+def update_permission_meta(ctx: StepContext, params: dict[str, Any]) -> None:
+    """更新权限元数据。"""
+    permission_id = int(params["permission_id"])
+    changes = {k: v for k, v in params.items() if k != "permission_id"}
+    ctx.api.update_permission_meta(permission_id, **changes)
+    print(f"[step] update_permission_meta permission={permission_id} changes={list(changes)}")
+
+
+@register("update_post_meta")
+def update_post_meta(ctx: StepContext, params: dict[str, Any]) -> None:
+    """更新岗位元数据。"""
+    post_id = int(params["post_id"])
+    changes = {k: v for k, v in params.items() if k != "post_id"}
+    ctx.api.update_post_meta(post_id, **changes)
+    print(f"[step] update_post_meta post={post_id} changes={list(changes)}")
+
+
+@register("batch_update_user_status")
+def batch_update_user_status(ctx: StepContext, params: dict[str, Any]) -> None:
+    """批量更新用户状态。"""
+    user_ids = [int(x) for x in params["user_ids"]]
+    status = int(params["status"])
+    ctx.api.batch_update_user_status(user_ids, status)
+    print(f"[step] batch_update_user_status users={user_ids} status={status}")
+
+
+@register("delete_users")
+def delete_users(ctx: StepContext, params: dict[str, Any]) -> None:
+    """批量逻辑删除用户。"""
+    user_ids = [int(x) for x in params["user_ids"]]
+    ctx.api.delete_users(user_ids)
+    print(f"[step] delete_users users={user_ids}")
 
 
 @register("wait_outbox")
@@ -54,6 +192,26 @@ def wait_outbox_step(ctx: StepContext, params: dict[str, Any]) -> None:
         cursor=cursor,
     )
     ctx.last_outbox_row = row
+
+
+@register("assert_no_outbox")
+def assert_no_outbox(ctx: StepContext, params: dict[str, Any]) -> None:
+    """断言指定时间窗内未产生新 outbox 行（负向用例）。"""
+    source_contains = params.get("source_biz_id_contains")
+    cursor = ctx.resolve_outbox_cursor(source_contains)
+    if cursor is None and ctx.previous_step_cursor is not None:
+        cursor = ctx.previous_step_cursor
+    if cursor is None:
+        cursor = snapshot_outbox_cursor(ctx.conn, source_contains)
+    grace_sec = float(params.get("grace_sec", 2))
+    time.sleep(grace_sec)
+    row = db_mod.fetch_outbox_after_id(ctx.conn, cursor.min_id, source_contains)
+    if row is not None:
+        raise AssertionError(
+            f"不应产生 outbox，但发现 id={row['id']} status={row.get('status')} "
+            f"source={row.get('source_biz_id')}"
+        )
+    print(f"[step] assert_no_outbox OK (grace={grace_sec}s)")
 
 
 @register("prepare_outbox_wait")

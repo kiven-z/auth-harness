@@ -1,0 +1,11 @@
+name: user-delete
+description: 用户逻辑删除触发失效
+steps:
+  - delete_users:
+      user_ids: [9001001099]
+  - wait_outbox:
+      source_biz_id_contains: "delete:9001001099"
+      timeout_sec: 60
+  - assert:
+      event:
+        impacted_user_count_min: 1

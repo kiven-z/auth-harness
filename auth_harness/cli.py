@@ -10,7 +10,13 @@ from auth_harness.config import load_config
 from auth_harness.domain.oracle import OracleMode
 from auth_harness.domain.paths import SCENARIOS_DIR
 from auth_harness.infrastructure import db as db_mod
-from auth_harness.runner.scenario_runner import run_scenario, run_smoke
+from auth_harness.runner.scenario_runner import (
+    run_integration,
+    run_p0,
+    run_scenario,
+    run_smoke,
+)
+from auth_harness.services.impact import run_impact_suite
 from auth_harness.services.preflight import run_preflight
 from auth_harness.services.reconcile import reconcile_many, resolve_user_ids
 
@@ -98,6 +104,38 @@ def smoke(ctx: click.Context) -> None:
     """快速运行三个关键场景。"""
     config = ctx.obj["config"]
     raise SystemExit(run_smoke(config))
+
+
+@cli.command()
+@click.pass_context
+def p0(ctx: click.Context) -> None:
+    """运行 P0 后端闭环场景套件。"""
+    config = ctx.obj["config"]
+    raise SystemExit(run_p0(config))
+
+
+@cli.command()
+@click.option("--no-negative", is_flag=True, help="跳过负向场景")
+@click.pass_context
+def integration(ctx: click.Context, no_negative: bool) -> None:
+    """运行全量 L2 集成场景。"""
+    config = ctx.obj["config"]
+    raise SystemExit(run_integration(config, include_negative=not no_negative))
+
+
+@cli.command()
+@click.option(
+    "--fixture",
+    "fixture_path",
+    type=click.Path(path_type=Path, exists=True),
+    default=None,
+    help="影响面 fixture YAML（默认 fixtures/impact_cases.yml）",
+)
+@click.pass_context
+def impact(ctx: click.Context, fixture_path: Path | None) -> None:
+    """L1 影响面反查（SQL fixture 驱动）。"""
+    config = ctx.obj["config"]
+    raise SystemExit(run_impact_suite(config, fixture_path))
 
 
 @cli.command("list-scenarios")

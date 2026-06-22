@@ -1,0 +1,14 @@
+name: grant-post-assign
+description: 岗位追加 R_DEPT_MGR，验证岗位成员权限刷新
+steps:
+  - put_post_roles:
+      post_id: 9000600001
+      role_ids: [9000200002, 9000200003]
+  - wait_outbox:
+      source_biz_id_contains: "post:9000600001"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001001003
+          roles_contain: [R_DEPT_MGR, R_POST_OP]
+          permissions_contain: [harness:dept:manage, harness:post:operate]

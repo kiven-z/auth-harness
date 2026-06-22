@@ -1,0 +1,31 @@
+# L1 影响面 fixture（与 AuthorizationImpactMapper 对齐，seed 后执行）
+cases:
+  - id: G-01-grant-user
+    kind: GRANT_USER
+    subject_ids: [9001001001]
+    expected_user_ids: [9001001001]
+
+  - id: G-03-grant-dept-fanout
+    kind: GRANT_DEPT
+    subject_ids: [9000100001]
+    expected_count_min: 1000
+
+  - id: G-06-grant-post
+    kind: GRANT_POST
+    subject_ids: [9000600001]
+    expected_user_ids: [9001001003, 9001001004]
+
+  - id: R-03-role-shared
+    kind: ROLE
+    role_codes: [R_SHARED]
+    expected_user_ids: [9001000002]
+
+  - id: M-01-user-dept-child
+    kind: USER_DEPT
+    subject_ids: [9000100003]
+    expected_user_ids: [9001001002, 9001001004]
+
+  - id: M-05-user-post-fanout
+    kind: USER_POST
+    subject_ids: [9000600001]
+    expected_user_ids: [9001001003, 9001001004]

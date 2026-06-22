@@ -1,0 +1,22 @@
+name: grant-user-clear
+description: 用户直连角色清空为仅 R_USER_BASE
+setup:
+  - put_user_roles:
+      user_id: 9001001001
+      role_ids: [9000200001, 9000200002]
+  - wait_outbox:
+      source_biz_id_contains: "replace-roles:9001001001"
+      timeout_sec: 60
+steps:
+  - put_user_roles:
+      user_id: 9001001001
+      role_ids: [9000200001]
+  - wait_outbox:
+      source_biz_id_contains: "replace-roles:9001001001"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001001001
+          roles_contain: [R_USER_BASE]
+          roles_not_contain: [R_DEPT_MGR]
+          permissions_not_contain: [harness:dept:manage]

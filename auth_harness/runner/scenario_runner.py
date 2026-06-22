@@ -9,7 +9,13 @@ import yaml
 
 from auth_harness.assertions.runner import AssertRunner
 from auth_harness.config import HarnessConfig
-from auth_harness.domain.paths import SCENARIOS_DIR, SMOKE_SCENARIOS
+from auth_harness.domain.paths import (
+    INTEGRATION_SCENARIOS,
+    NEGATIVE_SCENARIOS,
+    P0_SCENARIOS,
+    SCENARIOS_DIR,
+    SMOKE_SCENARIOS,
+)
 from auth_harness.infrastructure.api import ApiClient
 from auth_harness.infrastructure import db as db_mod
 from auth_harness.infrastructure import redis_client as redis_mod
@@ -70,11 +76,29 @@ def run_scenario(config: HarnessConfig, scenario_path: Path) -> int:
     return ScenarioRunner().run(config, scenario_path)
 
 
-def run_smoke(config: HarnessConfig) -> int:
-    """依次运行三个关键场景。"""
-    for name in SMOKE_SCENARIOS:
+def _run_named_scenarios(config: HarnessConfig, names: tuple[str, ...], label: str) -> int:
+    """按名称列表依次执行场景。"""
+    for name in names:
         code = run_scenario(config, SCENARIOS_DIR / name)
         if code != 0:
             return code
-    print("\n[smoke] 全部场景通过")
+    print(f"\n[{label}] 全部 {len(names)} 个场景通过")
     return 0
+
+
+def run_smoke(config: HarnessConfig) -> int:
+    """快速冒烟（3 个关键场景）。"""
+    return _run_named_scenarios(config, SMOKE_SCENARIOS, "smoke")
+
+
+def run_p0(config: HarnessConfig) -> int:
+    """P0 后端闭环场景套件。"""
+    return _run_named_scenarios(config, P0_SCENARIOS, "p0")
+
+
+def run_integration(config: HarnessConfig, include_negative: bool = True) -> int:
+    """全量 L2 集成场景（可选含负向）。"""
+    names = list(INTEGRATION_SCENARIOS)
+    if include_negative:
+        names.extend(NEGATIVE_SCENARIOS)
+    return _run_named_scenarios(config, tuple(names), "integration")

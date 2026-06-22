@@ -1,4 +1,4 @@
-.PHONY: auth-test install seed smoke reconcile run preflight test
+.PHONY: auth-test install seed smoke p0 integration reconcile run preflight test impact
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -17,6 +17,17 @@ seed: install
 smoke: install
 	$(PYTHON) -m auth_harness smoke
 
+p0: install
+	$(PYTHON) -m auth_harness p0
+
+integration: install
+	$(PYTHON) -m auth_harness seed
+	$(PYTHON) -m auth_harness preflight
+	$(PYTHON) -m auth_harness integration
+
+impact: install
+	$(PYTHON) -m auth_harness impact
+
 reconcile: install
 	$(PYTHON) -m auth_harness reconcile $(ARGS)
 
@@ -29,4 +40,4 @@ preflight: install
 test: install
 	$(PYTHON) -m unittest discover -s tests -v
 
-auth-test: smoke
+auth-test: p0

@@ -11,4 +11,10 @@ VALUES
     -- u_mixed 直连：R_POST_OP
     (9000500003, 'USER', 9001000002, 9000200003, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
     -- D_EDGE 部门：R_SHARED（供角色权限场景）
-    (9000500004, 'DEPT', 9000100002, 9000200004, NOW(), NOW(), 1, 1, 0, 'auth-harness');
+    (9000500004, 'DEPT', 9000100002, 9000200004, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    -- P_FANOUT 岗位：R_POST_OP（G-06）
+    (9000500005, 'POST', 9000600001, 9000200003, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    -- u_direct_only 直连：R_USER_BASE（G-01/02）
+    (9000500006, 'USER', 9001001001, 9000200001, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    -- u_mixed_anchor 直连：R_POST_OP
+    (9000500007, 'USER', 9001001004, 9000200003, NOW(), NOW(), 1, 1, 0, 'auth-harness');

@@ -6,10 +6,13 @@ import random
 import time
 from typing import Any
 
+import time
+
 from auth_harness.assertions.event import assert_event_counts
 from auth_harness.assertions.user_codes import assert_user_codes
 from auth_harness.infrastructure import db as db_mod
 from auth_harness.steps.context import StepContext
+from auth_harness.wait.outbox import snapshot_outbox_cursor
 
 
 class AssertRunner:
@@ -39,6 +42,8 @@ class AssertRunner:
         raise AssertionError(str(last_error))
 
     def _run_once(self, block: dict[str, Any]) -> None:
+        if block.get("expect_outbox") is False:
+            self._assert_no_outbox(block)
         self._assert_dept_fanout(block)
         self._assert_event(block)
 
@@ -60,8 +65,27 @@ class AssertRunner:
             raise AssertionError(f"impacted_user_count_min 未满足: expected>={min_count}, actual={actual}")
         print(f"[assert] dept {dept_id} 成员数 {actual} >= {min_count}")
 
+    def _assert_no_outbox(self, block: dict[str, Any]) -> None:
+        """负向：不应产生新 outbox。"""
+        source_contains = block.get("source_biz_id_contains")
+        cursor = self._ctx.resolve_outbox_cursor(source_contains)
+        if cursor is None and self._ctx.previous_step_cursor is not None:
+            cursor = self._ctx.previous_step_cursor
+        if cursor is None:
+            cursor = snapshot_outbox_cursor(self._ctx.conn, source_contains)
+        grace_sec = float(block.get("no_outbox_grace_sec", 2))
+        time.sleep(grace_sec)
+        row = db_mod.fetch_outbox_after_id(self._ctx.conn, cursor.min_id, source_contains)
+        if row is not None:
+            raise AssertionError(
+                f"不应产生 outbox，但发现 id={row['id']} source={row.get('source_biz_id')}"
+            )
+        print(f"[assert] expect_outbox=false OK (grace={grace_sec}s)")
+
     def _assert_event(self, block: dict[str, Any]) -> None:
         """可选事件表断言（仅 `event:` 块）。"""
+        if block.get("expect_outbox") is False:
+            return
         event_spec = block.get("event")
         if not event_spec:
             return

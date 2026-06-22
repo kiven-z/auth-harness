@@ -1,0 +1,61 @@
+name: auth-harness integration
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'auth_harness/**'
+      - 'scenarios/**'
+      - 'sql/**'
+      - 'fixtures/**'
+      - 'tests/**'
+      - 'requirements.txt'
+      - 'Makefile'
+      - '.github/workflows/auth-harness.yml'
+
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: make install
+      - name: Unit tests
+        run: make test
+
+  # 集成测试需自备 test 环境 MySQL/Redis/服务；默认仅手动 workflow_dispatch 时执行
+  integration:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-harness
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: make install
+      - name: Write config from secrets
+        env:
+          HARNESS_MYSQL_HOST: ${{ secrets.HARNESS_MYSQL_HOST }}
+          HARNESS_MYSQL_USER: ${{ secrets.HARNESS_MYSQL_USER }}
+          HARNESS_MYSQL_PASSWORD: ${{ secrets.HARNESS_MYSQL_PASSWORD }}
+          HARNESS_ADMIN_PASSWORD: ${{ secrets.HARNESS_ADMIN_PASSWORD }}
+          HARNESS_JWT_SECRET: ${{ secrets.HARNESS_JWT_SECRET }}
+        run: |
+          cp config.example.yml config.yml
+          sed -i "s|host: .*|host: ${HARNESS_MYSQL_HOST:-127.0.0.1}|" config.yml
+          sed -i "s|user: .*|user: ${HARNESS_MYSQL_USER:-dev_user}|" config.yml
+          sed -i "s|password: CHANGE_ME|password: ${HARNESS_MYSQL_PASSWORD}|" config.yml
+          sed -i "s|password: CHANGE_ME|password: ${HARNESS_ADMIN_PASSWORD}|" config.yml
+          sed -i "s|secret: CHANGE_ME_AT_LEAST_32_BYTES|secret: ${HARNESS_JWT_SECRET}|" config.yml
+      - name: P0 integration
+        run: make integration

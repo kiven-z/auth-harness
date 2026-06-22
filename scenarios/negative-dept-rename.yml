@@ -1,0 +1,9 @@
+name: negative-dept-rename
+description: 仅改部门名称不应触发授权失效 outbox
+steps:
+  - update_dept_meta:
+      dept_id: 9000100003
+      deptName: Harness 子部门（重命名测试）
+  - assert_no_outbox:
+      source_biz_id_contains: "9000100003"
+      grace_sec: 2

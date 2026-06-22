@@ -1,0 +1,27 @@
+name: permission-code-update
+description: 权限码变更触发持有者刷新（结束时恢复原码）
+setup:
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300001, 9000300004]
+  - wait_outbox:
+      source_biz_id_contains: "assign-permissions:R_SHARED"
+      timeout_sec: 60
+steps:
+  - update_permission_meta:
+      permission_id: 9000300004
+      permissionCode: harness:shared:view2
+  - wait_outbox:
+      source_biz_id_contains: "harness:shared:view"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001000002
+          permissions_contain: [harness:shared:view2]
+          permissions_not_contain: [harness:shared:view]
+  - update_permission_meta:
+      permission_id: 9000300004
+      permissionCode: harness:shared:view
+  - wait_outbox:
+      source_biz_id_contains: "harness:shared:view"
+      timeout_sec: 60

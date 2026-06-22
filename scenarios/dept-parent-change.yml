@@ -1,0 +1,19 @@
+name: dept-parent-change
+description: 子部门变更父节点后成员权限随部门树变化（结束时移回）
+steps:
+  - move_dept:
+      dept_id: 9000100003
+      parent_id: 9000100002
+  - wait_outbox:
+      source_biz_id_contains: "move:9000100003"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001001002
+          roles_contain: [R_SHARED]
+  - move_dept:
+      dept_id: 9000100003
+      parent_id: 9000100001
+  - wait_outbox:
+      source_biz_id_contains: "move:9000100003"
+      timeout_sec: 60

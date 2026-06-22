@@ -1,6 +1,6 @@
 # auth-harness — 授权失效链路测试工具
 
-用于自动化验证 **Admin API 变更 → Outbox → Auth 失效 → Redis 画像刷新** 全链路（L2 smoke），避免手工点 UI。
+用于自动化验证 **Admin API 变更 → Outbox → Auth 失效 → Redis 画像刷新** 全链路（L2 smoke），以及 **L1 影响面 SQL 反查**。
 
 ## 架构
 
@@ -14,211 +14,123 @@ YAML scenario → ScenarioRunner → StepRegistry (步骤策略)
 
 1. **DB oracle**：`GET /api/auth/inner/authorization/principal/{userId}/effective-codes`（或 SQL 回退）
 2. **Redis**：`auth:security:user:perm:{userId}`
-3. **可选事件表**：`auth_authorization_invalidation_event`（`impacted_user_count` 等）
-
-内部接口需请求头 `X-Internal-JWT`（服务身份 JWT，与 `auth.common.jwt` 配置一致）。
+3. **可选事件表**：`auth_authorization_invalidation_event`（`impacted_user_count` 等；`wait_outbox` 后自动取 `event_id`）
 
 ## 包结构
 
 ```text
 auth-harness/
   auth_harness/
-    cli.py                 # Click 入口
-    config.py              # config.yml 加载
+    cli.py
     domain/
-      oracle.py            # DB vs Redis 对比
-      paths.py             # 场景/SQL 路径常量
+      oracle.py, paths.py, impact.py    # L1 影响面 SQL
     infrastructure/
-      api.py               # HTTP 客户端
-      db.py                # MySQL（seed、outbox、event、oracle SQL）
-      redis_client.py      # Redis 画像读取
-    steps/
-      registry.py          # 步骤注册表
-      context.py           # 步骤共享上下文（含 outbox 游标）
-      handlers.py          # 内置步骤处理器
-    assertions/
-      runner.py            # 断言块（含 reconcile 重试）
-      user_codes.py        # 用户角色/权限码断言
-      event.py             # 失效事件表断言
-    wait/
-      outbox.py            # outbox 轮询（游标防陈旧 SUCCESS）
-    runner/
-      scenario_runner.py   # YAML 场景执行
-    services/
-      reconcile.py         # 批量对账 CLI 逻辑
-      preflight.py         # 连通性检查
-  scenarios/               # YAML 场景
-  sql/                     # 种子与清理脚本
-  tests/                   # 单元测试（纯逻辑）
+      api.py, db.py, redis_client.py
+    steps/ handlers.py, registry.py, context.py
+    assertions/ runner.py, user_codes.py, event.py
+    wait/ outbox.py
+    runner/ scenario_runner.py
+    services/ preflight.py, reconcile.py, impact.py
+  scenarios/          # 23 个 YAML（21 可跑 + 2 待后端）
+  fixtures/           # L1 impact_cases.yml
+  sql/                # 种子与清理
+  tests/
 ```
 
 ## 固定测试 ID（9000 前缀）
 
-> 使用固定大整数，避免前端 JSON 雪花 ID 精度丢失。
-
-| 实体        | ID / 编码                              |
-| ----------- | -------------------------------------- |
-| D_FANOUT    | `9000100001`                           |
-| D_EDGE      | `9000100002`                           |
-| 扇出用户    | `9001000001` … `9001001000`（1000 人） |
-| u_anchor    | `9001000001`                           |
-| u_mixed     | `9001000002`                           |
-| R_USER_BASE | `9000200001`                           |
-| R_DEPT_MGR  | `9000200002`                           |
-| R_POST_OP   | `9000200003`                           |
-| R_SHARED    | `9000200004`                           |
-
-种子用户默认密码：`password`（BCrypt）。
-
-## Dev vs Test 环境
-
-auth-server 通过 Spring Profile 区分环境（Nacos namespace 同为 `${spring.profiles.active}`）：
-
-| Profile       | MySQL 库          | 主机         | Redis db |
-| ------------- | ----------------- | ------------ | -------- |
-| `dev`（默认） | `auth_admin_base` | 192.168.3.19 | 0        |
-| `test`        | `auth_admin_test` | 192.168.3.4  | 1        |
-
-运行 harness 前，请让 **auth-service、system-service** 使用 test 配置，避免写入 dev 库或 Redis db 0：
-
-```bash
-export SPRING_PROFILES_ACTIVE=test
-```
-
-`config.example.yml` 默认对齐 **test** 环境。
-
-## 前置条件
-
-- Python 3.10+
-- 可访问的 MySQL（`auth_admin_test`）、Redis、auth-service（20001）、system-service（20002）
-- **管理账号**：`config.yml` 中 `admin` 须在目标库中存在，且具备 `sysDept:update`、`sysRole:update` 等权限
-- `auth.system.authorization-invalidation.sync-dispatch-enabled: true`（默认开启）
-- 运行前建议：`make preflight`
+| 实体 | ID / 编码 |
+|------|-----------|
+| D_FANOUT / D_EDGE / D_CHILD | `9000100001` / `9000100002` / `9000100003` |
+| P_FANOUT / P_EDGE | `9000600001` / `9000600002` |
+| 扇出用户 | `9001000001` … `9001001000` |
+| u_direct / u_dept / u_post / u_mixed_anchor | `9001001001` … `9001001004` |
+| R_USER_BASE … R_SHARED | `9000200001` … `9000200004` |
 
 ## 快速开始
 
 ```bash
 cd auth-harness
-
-cp config.example.yml config.yml
-# 编辑 MySQL / Redis / admin / internal_jwt.secret
+cp config.example.yml config.yml   # 填写 MySQL / Redis / admin / JWT
+export SPRING_PROFILES_ACTIVE=test
 
 make install
 make seed
-make preflight   # 可选
-make auth-test   # 等价 make smoke
+make preflight
+make p0          # P0 闭环 8 场景
+make integration # 全量 21 场景 + 3 负向
+make impact      # L1 fixture 6 条
+make test        # 单元测试
 ```
 
 ## CLI 命令
 
-```bash
-python -m auth_harness seed
-python -m auth_harness cleanup
-python -m auth_harness run scenarios/grant-dept-assign.yml
-python -m auth_harness reconcile --user 9001000001
-python -m auth_harness reconcile --dept D_FANOUT --sample 20
-python -m auth_harness smoke
-python -m auth_harness preflight
-python -m auth_harness list-scenarios
-make test        # 单元测试
-```
+| 命令 | 说明 |
+|------|------|
+| `python -m auth_harness seed` | 执行 sql/ 种子 |
+| `python -m auth_harness run <scenario.yml>` | 单场景 |
+| `python -m auth_harness smoke` | 快速 3 场景 |
+| `python -m auth_harness p0` | P0 套件（8 场景） |
+| `python -m auth_harness integration` | 21 L2 + 3 负向 |
+| `python -m auth_harness impact` | L1 影响面 fixture |
+| `python -m auth_harness reconcile` | 批量对账 |
+| `python -m auth_harness preflight` | 连通性检查 |
+| `python -m auth_harness list-scenarios` | 列出场景文件 |
 
-**退出码**：`reconcile` / `run` / `smoke` 在首个不一致或断言失败时返回 `1`。
+## 场景清单（23）
 
-## 如何新增场景
+### P0（8）
 
-在 `scenarios/` 下新建 YAML，格式与现有一致：
+| 文件 | 验证点 |
+|------|--------|
+| grant-dept-assign / remove | 部门角色扇出 |
+| grant-user-assign / clear | 用户直连角色 |
+| grant-dept-replace | 部门角色全量替换 |
+| grant-post-assign / remove | 岗位角色 |
+| role-permission-replace | 角色权限全量替换 |
 
-```yaml
-name: my-scenario
-description: 简短说明
-setup:          # 可选
-  - put_dept_roles:
-      dept_id: 9000100001
-      role_ids: [9000200001]
-  - wait_outbox:
-      source_biz_id_contains: "9000100001"
-steps:
-  - put_dept_roles:
-      dept_id: 9000100001
-      role_ids: [9000200001, 9000200002]
-  - wait_outbox:
-      source_biz_id_contains: "9000100001"
-  - assert:
-      impacted_user_count_min: 1000    # 部门子树成员数下限
-      event:                           # 可选：事件表断言
-        impacted_user_count_min: 1000
-      users:
-        - user_id: 9001000001
-          roles_contain: [R_DEPT_MGR]
-      sample_from_dept:
-        dept_id: 9000100001
-        sample_size: 5
-        roles_contain: [R_DEPT_MGR]
-```
+### 扩展 L2（13）
 
-顶层 `assert:` 块与步骤内 `- assert:` 等价；`assert` 块会自动按 `config.wait` 重试（与 `reconcile` 相同策略）。
+role-permission-add/remove, role-disable, permission-code-update, user-dept-assign/move/remove, dept-parent-change, user-post-assign/remove
 
-## 如何新增步骤类型
+### 负向（3）
 
-在 `auth_harness/steps/handlers.py`（或新模块）中注册：
+negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outbox`）
 
-```python
-from auth_harness.steps.registry import DEFAULT_REGISTRY
+### 待后端（2）
 
-register = DEFAULT_REGISTRY.register
+`user-status-change.yml`、`user-delete.yml` — `SysUserServiceImpl` 当前未触发失效 outbox，未纳入 `make integration`。
 
-@register("my_action")
-def my_action(ctx: StepContext, params: dict) -> None:
-  ctx.api.some_call(...)
-```
-
-YAML 中即可使用 `- my_action: { ... }`。`StepContext` 提供 `config`、`conn`、`rds`、`api` 及 `last_outbox_row`。
-
-可选步骤：
+## 步骤类型（节选）
 
 | 步骤 | 说明 |
-| ---- | ---- |
-| `put_dept_roles` | 部门角色全量覆盖 |
-| `put_user_roles` | 用户直连角色 |
+|------|------|
+| `put_dept_roles` / `put_user_roles` / `put_post_roles` | grant_table 全量覆盖 |
 | `post_role_permissions` | 角色权限全量分配 |
-| `wait_outbox` | 等待 outbox SUCCESS（自动使用上一步边界游标） |
-| `prepare_outbox_wait` | 显式记录游标（高级用法） |
-| `reconcile_user` | 单用户对账（无重试） |
-| `assert` | 断言块（含重试） |
+| `post_user_dept` / `put_user_dept` / `delete_user_dept` | 用户部门 |
+| `post_user_post` / `delete_user_post` | 用户岗位 |
+| `update_dept_meta` / `move_dept` | 部门元数据 / 移动 |
+| `update_role_meta` / `update_permission_meta` / `update_post_meta` | 元数据更新 |
+| `wait_outbox` | 等待 outbox SUCCESS |
+| `assert_no_outbox` | 负向：不应产生 outbox |
+| `assert` | triple assert（支持 `expect_outbox: false`） |
 
-## Outbox 等待与游标
+## Outbox `source_biz_id` 过滤示例
 
-`wait_outbox` 只匹配**上一步开始前**之后产生的新 outbox 行（`id > boundary_cursor`），避免匹配到历史 `SUCCESS` 行。
+| 操作 | `source_biz_id_contains` |
+|------|--------------------------|
+| 部门 grant | `9000100001` |
+| 用户直连角色 | `replace-roles:9001001001` |
+| 岗位 grant | `post:9000600001` |
+| 角色权限 | `assign-permissions:R_SHARED` |
+| 用户部门 | `create-dept:9001001001` |
 
-`source_biz_id_contains` 须与后端 `source_biz_id` 格式一致：
+## CI
 
-| 操作 | 示例 filter |
-| ---- | ----------- |
-| 部门角色 | `9000100001`（部门 ID） |
-| 角色权限 | `assign-permissions:R_SHARED`（`assign-permissions:{roleCode}`） |
+`.github/workflows/auth-harness.yml`：push 跑单元测试；`workflow_dispatch` 可跑 `make integration`（需配置 secrets）。
 
-每步执行前 `ScenarioRunner` 记录 outbox 入口游标；`wait_outbox` 使用**上一步**的入口游标。也可用 `prepare_outbox_wait` 显式指定游标。
+## 剩余缺口
 
-## 内置场景
-
-| 文件                          | 验证点                                       |
-| ----------------------------- | -------------------------------------------- |
-| `grant-dept-assign.yml`       | 部门追加 `R_DEPT_MGR`，扇出 1000 用户刷新    |
-| `grant-dept-remove.yml`       | 部门移除角色后成员不再持有该角色             |
-| `role-permission-replace.yml` | 角色权限全量替换后 Redis 与 DB 一致          |
-
-## API 映射
-
-| 操作             | 方法与路径                                                                                |
-| ---------------- | ----------------------------------------------------------------------------------------- |
-| 登录             | `POST /api/auth/login/username`                                                           |
-| 部门角色全量覆盖 | `PUT /api/system/dept/{deptId}/roles`                                                     |
-| 用户直连角色     | `PUT /api/system/user-role/{userId}`                                                      |
-| 角色权限全量分配 | `POST /api/system/role/{roleId}/permissions`                                              |
-| 内部生效码       | `GET /api/auth/inner/authorization/principal/{userId}/effective-codes` + `X-Internal-JWT` |
-
-## 安全提示
-
-- **勿提交** `config.yml`（已 gitignore）
-- `internal_jwt.secret` 须与运行环境 JWT 密钥一致，仅用于本地/测试环境
+- **J-01/J-02**：Outbox Job 补偿场景（需关闭 sync-dispatch 或 mock Feign）
+- **U-01/U-02**：用户状态/删除失效（需 auth-server 补充 trigger）
+- **L1 C4**：L2 `event.impacted_user_count` 与 L1 集合自动比对（可后续加 assert 块）

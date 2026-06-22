@@ -1,0 +1,20 @@
+name: role-permission-add
+description: 角色权限增量添加 harness:user:read
+setup:
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300004]
+  - wait_outbox:
+      source_biz_id_contains: "assign-permissions:R_SHARED"
+      timeout_sec: 60
+steps:
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300001, 9000300004]
+  - wait_outbox:
+      source_biz_id_contains: "assign-permissions:R_SHARED"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001000002
+          permissions_contain: [harness:user:read, harness:shared:view]

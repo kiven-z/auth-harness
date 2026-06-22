@@ -68,11 +68,196 @@ class ApiClient:
         url = f"{self.config.system_base_url}/api/system/user-role/{user_id}"
         self._put_json(url, {"roleIds": role_ids})
 
+    def put_post_roles(self, post_id: int, role_ids: list[int]) -> None:
+        """岗位角色全量覆盖。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/post/{post_id}/roles"
+        self._put_json(url, {"roleIds": role_ids})
+
     def post_role_permissions(self, role_id: int, permission_ids: list[int]) -> None:
         """角色权限全量分配。"""
         self.ensure_login()
         url = f"{self.config.system_base_url}/api/system/role/{role_id}/permissions"
         self._post_json(url, {"permissionIds": permission_ids})
+
+    def post_user_dept(
+        self,
+        user_id: int,
+        dept_id: int,
+        *,
+        status: int = 1,
+        is_primary: bool = True,
+        remark: str | None = None,
+    ) -> None:
+        """新增用户部门关联。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user-dept/{user_id}"
+        payload: dict[str, Any] = {
+            "deptId": dept_id,
+            "status": status,
+            "isPrimary": is_primary,
+        }
+        if remark is not None:
+            payload["remark"] = remark
+        self._post_json(url, payload)
+
+    def put_user_dept(
+        self,
+        user_id: int,
+        relation_id: int,
+        dept_id: int,
+        *,
+        status: int = 1,
+        is_primary: bool = True,
+        remark: str | None = None,
+    ) -> None:
+        """更新用户部门关联。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user-dept/{user_id}/{relation_id}"
+        payload: dict[str, Any] = {
+            "deptId": dept_id,
+            "status": status,
+            "isPrimary": is_primary,
+        }
+        if remark is not None:
+            payload["remark"] = remark
+        self._put_json(url, payload)
+
+    def delete_user_depts(self, user_id: int, relation_ids: list[int]) -> None:
+        """批量删除用户部门关联。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user-dept/{user_id}"
+        self._delete_json(url, relation_ids)
+
+    def post_user_post(
+        self,
+        user_id: int,
+        post_id: int,
+        *,
+        status: int = 1,
+        is_primary: bool = True,
+        remark: str | None = None,
+    ) -> None:
+        """新增用户岗位关联。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user-post/{user_id}"
+        payload: dict[str, Any] = {
+            "postId": post_id,
+            "status": status,
+            "isPrimary": is_primary,
+        }
+        if remark is not None:
+            payload["remark"] = remark
+        self._post_json(url, payload)
+
+    def delete_user_posts(self, user_id: int, relation_ids: list[int]) -> None:
+        """批量删除用户岗位关联。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user-post/{user_id}"
+        self._delete_json(url, relation_ids)
+
+    def update_dept_meta(self, dept_id: int, **changes: Any) -> None:
+        """更新部门元数据（名称/父级/状态等）。"""
+        detail = self.get_dept_detail(dept_id)
+        payload = {
+            "id": dept_id,
+            "parentId": detail["parentId"],
+            "deptName": detail["deptName"],
+            "deptCode": detail["deptCode"],
+            "status": detail["status"],
+            "orderNum": detail.get("orderNum"),
+            "remark": detail.get("remark"),
+        }
+        payload.update(changes)
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}"
+        self._put_json(url, payload)
+
+    def move_dept(self, dept_id: int, parent_id: int) -> None:
+        """移动部门到新的父部门。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}/move"
+        self._put_json(url, {"parentId": parent_id})
+
+    def update_role_meta(self, role_id: int, **changes: Any) -> None:
+        """更新角色元数据（编码/名称/状态等）。"""
+        detail = self.get_role_detail(role_id)
+        payload = {
+            "id": role_id,
+            "roleCode": detail["roleCode"],
+            "roleName": detail["roleName"],
+            "status": detail["status"],
+            "orderNum": detail.get("orderNum"),
+            "remark": detail.get("remark"),
+        }
+        payload.update(changes)
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/role/{role_id}"
+        self._put_json(url, payload)
+
+    def update_permission_meta(self, permission_id: int, **changes: Any) -> None:
+        """更新权限元数据（编码/名称/状态等）。"""
+        detail = self.get_permission_detail(permission_id)
+        payload = {
+            "id": permission_id,
+            "permissionCode": detail["permissionCode"],
+            "permissionName": detail["permissionName"],
+            "status": detail["status"],
+            "orderNum": detail.get("orderNum"),
+            "remark": detail.get("remark"),
+        }
+        payload.update(changes)
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/permission/{permission_id}"
+        self._put_json(url, payload)
+
+    def update_post_meta(self, post_id: int, **changes: Any) -> None:
+        """更新岗位元数据（名称/排序/状态等）。"""
+        detail = self.get_post_detail(post_id)
+        payload = {
+            "deptId": detail["deptId"],
+            "postCode": detail["postCode"],
+            "postName": detail["postName"],
+            "status": detail["status"],
+            "orderNum": detail.get("orderNum"),
+            "remark": detail.get("remark"),
+        }
+        payload.update(changes)
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/post/{post_id}"
+        self._put_json(url, payload)
+
+    def batch_update_user_status(self, user_ids: list[int], status: int) -> None:
+        """批量更新用户状态。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user/status"
+        self._put_json(url, {"ids": user_ids, "status": status})
+
+    def delete_users(self, user_ids: list[int]) -> None:
+        """批量逻辑删除用户。"""
+        self.ensure_login()
+        url = f"{self.config.system_base_url}/api/system/user"
+        self._delete_json(url, user_ids)
+
+    def get_dept_detail(self, dept_id: int) -> dict[str, Any]:
+        """部门详情。"""
+        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}"
+        return self._get_data(url)
+
+    def get_role_detail(self, role_id: int) -> dict[str, Any]:
+        """角色详情。"""
+        url = f"{self.config.system_base_url}/api/system/role/{role_id}"
+        return self._get_data(url)
+
+    def get_permission_detail(self, permission_id: int) -> dict[str, Any]:
+        """权限详情。"""
+        url = f"{self.config.system_base_url}/api/system/permission/{permission_id}"
+        return self._get_data(url)
+
+    def get_post_detail(self, post_id: int) -> dict[str, Any]:
+        """岗位详情。"""
+        url = f"{self.config.system_base_url}/api/system/post/{post_id}"
+        return self._get_data(url)
 
     def get_effective_codes(self, user_id: int) -> dict[str, Any]:
         """调用内部 effective-codes（需 X-Internal-JWT）。"""
@@ -93,6 +278,18 @@ class ApiClient:
             "permissions": sorted(data.get("permissionCodes") or []),
         }
 
+    def _get_data(self, url: str) -> dict[str, Any]:
+        self.ensure_login()
+        response = self.session.get(url, timeout=30)
+        response.raise_for_status()
+        body = response.json()
+        if body.get("code") != SUCCESS_CODE:
+            raise RuntimeError(f"GET {url} 失败: {body}")
+        data = body.get("data")
+        if not isinstance(data, dict):
+            raise RuntimeError(f"GET {url} 返回非对象: {body}")
+        return data
+
     def _put_json(self, url: str, payload: dict[str, Any]) -> None:
         response = self.session.put(url, json=payload, timeout=30)
         response.raise_for_status()
@@ -106,6 +303,13 @@ class ApiClient:
         body = response.json()
         if body.get("code") != SUCCESS_CODE:
             raise RuntimeError(f"POST {url} 失败: {body}")
+
+    def _delete_json(self, url: str, payload: list[Any]) -> None:
+        response = self.session.delete(url, json=payload, timeout=30)
+        response.raise_for_status()
+        body = response.json()
+        if body.get("code") != SUCCESS_CODE:
+            raise RuntimeError(f"DELETE {url} 失败: {body}")
 
     def _issue_internal_service_token(self) -> str:
         """签发服务身份内部 JWT（与 InternalTokenProvider.buildServiceToken 对齐）。"""

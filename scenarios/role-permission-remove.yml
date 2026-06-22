@@ -1,0 +1,21 @@
+name: role-permission-remove
+description: 角色权限移除 harness:shared:view
+setup:
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300001, 9000300004]
+  - wait_outbox:
+      source_biz_id_contains: "assign-permissions:R_SHARED"
+      timeout_sec: 60
+steps:
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300001]
+  - wait_outbox:
+      source_biz_id_contains: "assign-permissions:R_SHARED"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001000002
+          permissions_contain: [harness:user:read]
+          permissions_not_contain: [harness:shared:view]

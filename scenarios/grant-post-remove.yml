@@ -1,0 +1,22 @@
+name: grant-post-remove
+description: 岗位移除 R_DEPT_MGR，成员不再持有部门管理权限
+setup:
+  - put_post_roles:
+      post_id: 9000600001
+      role_ids: [9000200002, 9000200003]
+  - wait_outbox:
+      source_biz_id_contains: "post:9000600001"
+      timeout_sec: 60
+steps:
+  - put_post_roles:
+      post_id: 9000600001
+      role_ids: [9000200003]
+  - wait_outbox:
+      source_biz_id_contains: "post:9000600001"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001001003
+          roles_contain: [R_POST_OP]
+          roles_not_contain: [R_DEPT_MGR]
+          permissions_not_contain: [harness:dept:manage]

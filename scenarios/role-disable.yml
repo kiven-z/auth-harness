@@ -1,0 +1,20 @@
+name: role-disable
+description: 角色禁用后持有者失去该角色权限（结束时恢复启用）
+steps:
+  - update_role_meta:
+      role_id: 9000200004
+      status: false
+  - wait_outbox:
+      source_biz_id_contains: "update:R_SHARED"
+      timeout_sec: 60
+  - assert:
+      users:
+        - user_id: 9001000002
+          roles_not_contain: [R_SHARED]
+          permissions_not_contain: [harness:shared:view]
+  - update_role_meta:
+      role_id: 9000200004
+      status: true
+  - wait_outbox:
+      source_biz_id_contains: "update:R_SHARED"
+      timeout_sec: 60
