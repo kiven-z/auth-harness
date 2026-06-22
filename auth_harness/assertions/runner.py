@@ -6,8 +6,6 @@ import random
 import time
 from typing import Any
 
-import time
-
 from auth_harness.assertions.event import assert_event_counts
 from auth_harness.assertions.user_codes import assert_user_codes
 from auth_harness.infrastructure import db as db_mod

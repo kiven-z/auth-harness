@@ -55,7 +55,8 @@ cp config.example.yml config.yml   # 填写 MySQL / Redis / admin / JWT
 export SPRING_PROFILES_ACTIVE=test
 
 make install
-make seed
+make seed          # 会先执行 cleanup.sql 再灌种子
+make cleanup       # 仅清理 9000 前缀测试数据（sql/cleanup.sql）
 make preflight
 make p0          # P0 闭环 8 场景
 make integration # 全量 21 场景 + 3 负向
@@ -67,7 +68,8 @@ make test        # 单元测试
 
 | 命令 | 说明 |
 |------|------|
-| `python -m auth_harness seed` | 执行 sql/ 种子 |
+| `make cleanup` / `python -m auth_harness cleanup` | 清理 9000 前缀测试数据（`sql/cleanup.sql`） |
+| `python -m auth_harness seed` | 执行 sql/ 种子（会先跑 cleanup.sql） |
 | `python -m auth_harness run <scenario.yml>` | 单场景 |
 | `python -m auth_harness smoke` | 快速 3 场景 |
 | `python -m auth_harness p0` | P0 套件（8 场景） |
@@ -109,6 +111,7 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 | `post_role_permissions` | 角色权限全量分配 |
 | `post_user_dept` / `put_user_dept` / `delete_user_dept` | 用户部门 |
 | `post_user_post` / `delete_user_post` | 用户岗位 |
+| `ensure_user_post` | 幂等恢复岗位成员（`wait_outbox: true` 时仅新建关联才等待） |
 | `update_dept_meta` / `move_dept` | 部门元数据 / 移动 |
 | `update_role_meta` / `update_permission_meta` / `update_post_meta` | 元数据更新 |
 | `wait_outbox` | 等待 outbox SUCCESS |

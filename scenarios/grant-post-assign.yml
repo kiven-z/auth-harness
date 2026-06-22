@@ -1,12 +1,26 @@
 name: grant-post-assign
 description: 岗位追加 R_DEPT_MGR，验证岗位成员权限刷新
+setup:
+  - ensure_user_post:
+      user_id: 9001001003
+      post_id: 9000600001
+      is_primary: true
+      status: 1
+      wait_outbox: true
+      outbox_source_contains: "create-post:9001001003"
 steps:
+  - prepare_outbox_wait:
+      source_biz_id_contains: "replace-roles:post:9000600001"
   - put_post_roles:
       post_id: 9000600001
       role_ids: [9000200002, 9000200003]
   - wait_outbox:
-      source_biz_id_contains: "post:9000600001"
+      source_biz_id_contains: "replace-roles:post:9000600001"
       timeout_sec: 60
+  - verify_subject_roles:
+      subject_type: POST
+      subject_id: 9000600001
+      role_codes: [R_DEPT_MGR, R_POST_OP]
   - assert:
       users:
         - user_id: 9001001003

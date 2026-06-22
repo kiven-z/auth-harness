@@ -106,6 +106,48 @@ def post_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
     print(f"[step] post_user_post user={user_id} post={post_id}")
 
 
+@register("ensure_user_post")
+def ensure_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
+    """确保用户岗位关联存在；新建时可选等待 outbox。"""
+    user_id = int(params["user_id"])
+    post_id = int(params["post_id"])
+    row = db_mod.fetch_one(
+        ctx.conn,
+        """
+        SELECT id FROM user_post
+        WHERE user_id = %s AND post_id = %s AND status IN (1, 2)
+        LIMIT 1
+        """,
+        (user_id, post_id),
+    )
+    if row:
+        print(
+            f"[step] ensure_user_post user={user_id} post={post_id} "
+            f"already linked id={row['id']}"
+        )
+        return
+
+    ctx.api.post_user_post(
+        user_id,
+        post_id,
+        status=int(params.get("status", 1)),
+        is_primary=bool(params.get("is_primary", True)),
+        remark=params.get("remark"),
+    )
+    print(f"[step] ensure_user_post user={user_id} post={post_id} created")
+
+    if params.get("wait_outbox"):
+        wait_outbox_step(
+            ctx,
+            {
+                "source_biz_id_contains": params.get(
+                    "outbox_source_contains", f"create-post:{user_id}"
+                ),
+                "timeout_sec": params.get("timeout_sec", 60),
+            },
+        )
+
+
 @register("delete_user_post")
 def delete_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
     """用户离开岗位。"""
@@ -212,6 +254,22 @@ def assert_no_outbox(ctx: StepContext, params: dict[str, Any]) -> None:
             f"source={row.get('source_biz_id')}"
         )
     print(f"[step] assert_no_outbox OK (grace={grace_sec}s)")
+
+
+@register("verify_subject_roles")
+def verify_subject_roles(ctx: StepContext, params: dict[str, Any]) -> None:
+    """校验 grant_table 主体角色与期望一致（在 wait_outbox 之后、用户断言之前）。"""
+    subject_type = str(params["subject_type"]).upper()
+    subject_id = int(params["subject_id"])
+    expected = sorted(str(code) for code in params["role_codes"])
+    actual = sorted(db_mod.query_subject_role_codes(ctx.conn, subject_type, subject_id))
+    if actual != expected:
+        raise AssertionError(
+            f"grant_table {subject_type} {subject_id} 角色不一致\n"
+            f"  expected: {expected}\n"
+            f"  actual:   {actual}"
+        )
+    print(f"[step] verify_subject_roles {subject_type} {subject_id} OK roles={actual}")
 
 
 @register("prepare_outbox_wait")

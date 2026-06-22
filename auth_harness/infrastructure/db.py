@@ -217,6 +217,26 @@ def list_active_users_in_range(conn: pymysql.connections.Connection, id_min: int
     return [int(r["id"]) for r in rows]
 
 
+def query_subject_role_codes(
+    conn: pymysql.connections.Connection,
+    subject_type: str,
+    subject_id: int,
+) -> list[str]:
+    """查询 grant_table 主体已绑定的角色码。"""
+    rows = fetch_all(
+        conn,
+        """
+        SELECT r.role_code
+        FROM grant_table gt
+        INNER JOIN sys_role r ON r.id = gt.role_id
+        WHERE gt.subject_type = %s AND gt.subject_id = %s
+        ORDER BY r.role_code
+        """,
+        (subject_type, subject_id),
+    )
+    return [str(row["role_code"]) for row in rows]
+
+
 def fetch_perm_version(conn: pymysql.connections.Connection, user_id: int) -> int | None:
     """读取用户 perm_version。"""
     row = fetch_one(conn, "SELECT perm_version FROM sys_user WHERE id = %s", (user_id,))
