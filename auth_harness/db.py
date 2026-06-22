@@ -61,8 +61,10 @@ def _split_sql_statements(content: str) -> list[str]:
         buffer.append(line)
         buffer.append("\n")
         if stripped.endswith(delimiter):
-            chunk = "".join(buffer)
+            chunk = "".join(buffer).rstrip()
             if delimiter != ";":
+                if not chunk.endswith(delimiter):
+                    raise ValueError(f"SQL 语句未以分隔符 {delimiter!r} 结尾: {chunk[-80:]}")
                 chunk = chunk[: -len(delimiter)].strip()
             else:
                 chunk = chunk.strip()
@@ -76,9 +78,11 @@ def _split_sql_statements(content: str) -> list[str]:
 
 
 def run_seed(config: HarnessConfig) -> None:
-    """按顺序执行 seed SQL。"""
+    """按顺序执行 seed SQL（先 cleanup，保证重复执行不因外键失败）。"""
     conn = connect(config)
     try:
+        print("[seed] cleanup.sql (pre-seed)")
+        execute_sql_file(conn, SQL_DIR / "cleanup.sql")
         for name in SEED_ORDER:
             path = SQL_DIR / name
             print(f"[seed] {name}")

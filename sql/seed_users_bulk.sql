@@ -15,10 +15,12 @@ BEGIN
         SET uid = 9001000000 + i;
         SET uname = CONCAT('harness_u_', i);
         INSERT INTO sys_user (
-            id, username, nickname, password, status, perm_version,
+            id, username, nickname, email, phone, password, status, perm_version,
             create_time, update_time, create_user, update_user, version, remark
         ) VALUES (
             uid, uname, uname,
+            CONCAT(uname, '@harness.local'),
+            CONCAT('19', LPAD(i, 9, '0')),
             '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6',
             1, 0,
             NOW(), NOW(), 1, 1, 0, 'auth-harness'

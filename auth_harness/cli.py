@@ -9,6 +9,7 @@ import click
 from auth_harness.config import HARNESS_ROOT, load_config
 from auth_harness import db as db_mod
 from auth_harness.oracle import OracleMode
+from auth_harness.preflight import run_preflight
 from auth_harness.reconcile import reconcile_many, resolve_user_ids
 from auth_harness.scenarios import SCENARIOS_DIR, run_scenario, run_smoke
 
@@ -19,7 +20,7 @@ from auth_harness.scenarios import SCENARIOS_DIR, run_scenario, run_smoke
     "config_path",
     type=click.Path(path_type=Path, exists=True),
     default=None,
-    help="配置文件路径（默认 tools/auth-harness/config.yml）",
+    help="配置文件路径（默认项目根目录 config.yml）",
 )
 @click.pass_context
 def cli(ctx: click.Context, config_path: Path | None) -> None:
@@ -80,6 +81,14 @@ def reconcile(
     user_ids = resolve_user_ids(config, user_id=user_id, dept_code=dept_code, sample=sample)
     code = reconcile_many(config, user_ids, oracle_mode=oracle_mode, retry=not no_retry)
     raise SystemExit(code)
+
+
+@cli.command()
+@click.pass_context
+def preflight(ctx: click.Context) -> None:
+    """检查 MySQL / Redis / 服务连通性与管理账号。"""
+    config = ctx.obj["config"]
+    raise SystemExit(run_preflight(config))
 
 
 @cli.command()

@@ -56,15 +56,16 @@ export SPRING_PROFILES_ACTIVE=test
 
 ## 前置条件
 
-- Python 3.10+ 与 `python3-venv`（Ubuntu/Debian：`sudo apt install python3.12-venv`）
-- 可访问的 MySQL（`auth_admin_test`）、Redis（db 1）、auth-service（20001）、system-service（20002）
-- 管理账号具备 `sysDept:update`、`sysRole:update`、`sysUserRole:update` 等权限
+- Python 3.10+（推荐 `python3-venv`；无 venv 时可用 `python3 -m pip install --user -r requirements.txt`）
+- 可访问的 MySQL（`auth_admin_test`）、Redis、auth-service（20001）、system-service（20002）
+- **管理账号**：`config.yml` 中 `admin.username` / `admin.password` 须在目标库中存在，且具备 `sysDept:update`、`sysRole:update`、`sysUserRole:update` 等权限（harness 不创建管理员，仅使用已有账号）
 - `auth.system.authorization-invalidation.sync-dispatch-enabled: true`（默认开启，同步投递）
+- 运行前建议：`make preflight`（检查 MySQL / Redis / 服务 / 登录）。服务探测访问 `/actuator/health`；若 Spring Security 保护 actuator，返回 `401`/`403` 亦视为服务已启动（仅连接失败、超时或其他状态码如 `404`/`5xx` 会失败）
 
 ## 快速开始
 
 ```bash
-cd tools/auth-harness
+cd auth-harness
 
 # 1. 配置
 cp config.example.yml config.yml
@@ -72,10 +73,14 @@ cp config.example.yml config.yml
 
 # 2. 安装依赖
 make install
-# 或: python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# 或: python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt
+# 若无 python3-venv: python3 -m pip install --user -r requirements.txt
 
-# 3. 播种测试数据
+# 3. 播种测试数据（会先执行 cleanup.sql 清理同 ID 范围的旧数据，可重复运行）
 make seed
+
+# 3.5 可选：连通性检查
+make preflight
 
 # 4. 冒烟（部门移除角色 / 部门分配角色 / 角色权限替换）
 make auth-test
@@ -102,6 +107,9 @@ python -m auth_harness reconcile --user 9001000001 --oracle sql   # SQL 回退
 
 # 冒烟三场景
 python -m auth_harness smoke
+
+# 启动前检查（MySQL / Redis / 服务 / 管理账号）
+python -m auth_harness preflight
 
 # 列出场景
 python -m auth_harness list-scenarios
@@ -134,7 +142,7 @@ python -m auth_harness list-scenarios
 ## 目录结构
 
 ```
-tools/auth-harness/
+auth-harness/
   auth_harness/     # Python 包
   scenarios/        # YAML 场景
   sql/              # 种子与清理脚本

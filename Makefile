@@ -1,12 +1,15 @@
-.PHONY: auth-test install seed smoke reconcile run
+.PHONY: auth-test install seed smoke reconcile run preflight
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
 
 install:
-	python3 -m venv $(VENV) || true
-	$(PIP) install -r requirements.txt
+	@if [ ! -x "$(PYTHON)" ] || ! $(PYTHON) -m pip --version >/dev/null 2>&1; then \
+		rm -rf $(VENV); \
+		python3 -m venv $(VENV); \
+		$(PYTHON) -m ensurepip --upgrade; \
+	fi
+	$(PYTHON) -m pip install -r requirements.txt
 
 seed: install
 	$(PYTHON) -m auth_harness seed
@@ -19,5 +22,8 @@ reconcile: install
 
 run: install
 	$(PYTHON) -m auth_harness run $(ARGS)
+
+preflight: install
+	$(PYTHON) -m auth_harness preflight
 
 auth-test: smoke

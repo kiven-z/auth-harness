@@ -33,8 +33,17 @@ class ApiClient:
             "rememberMe": False,
         }
         response = self.session.post(url, json=payload, timeout=30)
+        try:
+            body = response.json()
+        except ValueError:
+            body = {"raw": response.text}
+        if response.status_code == 401:
+            raise RuntimeError(
+                "登录失败 (401)：请确认 config.yml 中 admin 账号密码正确，"
+                "且目标库中存在该用户并具备 sysDept:update / sysUserRole:update 等权限。"
+                f" 响应: {body}"
+            )
         response.raise_for_status()
-        body = response.json()
         if body.get("code") != SUCCESS_CODE:
             raise RuntimeError(f"登录失败: {body}")
         token = body["data"]["accessToken"]
