@@ -2,15 +2,15 @@ name: user-post-assign
 description: 用户加入岗位后继承岗位授权角色
 steps:
   - post_user_post:
-      user_id: 9001001002
+      user_id: 9001002002
       post_id: 9000600001
       is_primary: true
       status: 1
   - wait_outbox:
-      source_biz_id_contains: "create-post:9001001002"
+      source_biz_id_contains: "create-post:9001002002"
       timeout_sec: 60
   - assert:
       users:
-        - user_id: 9001001002
+        - user_id: 9001002002
           roles_contain: [R_POST_OP]
           permissions_contain: [harness:post:operate]

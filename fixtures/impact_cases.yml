@@ -2,18 +2,18 @@
 cases:
   - id: G-01-grant-user
     kind: GRANT_USER
-    subject_ids: [9001001001]
-    expected_user_ids: [9001001001]
+    subject_ids: [9001002001]
+    expected_user_ids: [9001002001]
 
   - id: G-03-grant-dept-fanout
     kind: GRANT_DEPT
     subject_ids: [9000100001]
-    expected_count_min: 1000
+    expected_count_min: 2000
 
   - id: G-06-grant-post
     kind: GRANT_POST
     subject_ids: [9000600001]
-    expected_user_ids: [9001001003, 9001001004]
+    expected_user_ids: [9001002003, 9001002004]
 
   - id: R-03-role-shared
     kind: ROLE
@@ -23,9 +23,9 @@ cases:
   - id: M-01-user-dept-child
     kind: USER_DEPT
     subject_ids: [9000100003]
-    expected_user_ids: [9001001002, 9001001004]
+    expected_user_ids: [9001002002, 9001002004]
 
   - id: M-05-user-post-fanout
     kind: USER_POST
     subject_ids: [9000600001]
-    expected_user_ids: [9001001003, 9001001004]
+    expected_user_ids: [9001002003, 9001002004]

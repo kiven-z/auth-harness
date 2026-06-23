@@ -1,8 +1,8 @@
--- auth-harness: 批量用户（9001000001..9001001000）+ u_anchor / u_mixed
+-- auth-harness: 批量用户（9001000001..9001002000）+ u_mixed
 -- 默认密码 BCrypt("password")
 
-DELETE FROM user_dept WHERE user_id BETWEEN 9001000001 AND 9001001100;
-DELETE FROM sys_user WHERE id BETWEEN 9001000001 AND 9001001100;
+DELETE FROM user_dept WHERE user_id BETWEEN 9001000001 AND 9001002100;
+DELETE FROM sys_user WHERE id BETWEEN 9001000001 AND 9001002100;
 
 DROP PROCEDURE IF EXISTS sp_harness_seed_users;
 DELIMITER $$
@@ -11,7 +11,7 @@ BEGIN
     DECLARE i INT DEFAULT 1;
     DECLARE uid BIGINT;
     DECLARE uname VARCHAR(64);
-    WHILE i <= 1000 DO
+    WHILE i <= 2000 DO
         SET uid = 9001000000 + i;
         SET uname = CONCAT('harness_u_', i);
         INSERT INTO sys_user (
@@ -35,7 +35,7 @@ BEGIN
 
     -- u_mixed：挂在 D_EDGE
     INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
-    VALUES (9002001001, 9001000002, 9000100002, 0, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
+    VALUES (9002002100, 9001000002, 9000100002, 0, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 END$$
 DELIMITER ;
 

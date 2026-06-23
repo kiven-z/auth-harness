@@ -2,13 +2,13 @@ name: user-post-remove
 description: 用户离开岗位后失去岗位授权角色
 steps:
   - delete_user_post:
-      user_id: 9001001003
+      user_id: 9001002003
       relation_ids: [9002003001]
   - wait_outbox:
-      source_biz_id_contains: "delete-post:9001001003"
+      source_biz_id_contains: "delete-post:9001002003"
       timeout_sec: 60
   - assert:
       users:
-        - user_id: 9001001003
+        - user_id: 9001002003
           roles_not_contain: [R_POST_OP]
           permissions_not_contain: [harness:post:operate]

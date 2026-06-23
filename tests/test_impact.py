@@ -37,10 +37,10 @@ class ResolveImpactSqlTest(unittest.TestCase):
 
     @patch("auth_harness.domain.impact.db_mod.fetch_all")
     def test_grant_user(self, fetch_mock) -> None:
-        fetch_mock.return_value = [{"user_id": 9001001001}]
+        fetch_mock.return_value = [{"user_id": 9001002001}]
         conn = MagicMock()
-        result = resolve_impacted_user_ids(conn, "GRANT_USER", subject_ids=[9001001001])
-        self.assertEqual(result, {9001001001})
+        result = resolve_impacted_user_ids(conn, "GRANT_USER", subject_ids=[9001002001])
+        self.assertEqual(result, {9001002001})
 
 
 if __name__ == "__main__":

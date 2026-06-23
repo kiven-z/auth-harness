@@ -83,7 +83,7 @@ def resolve_user_ids(
             members = db_mod.list_dept_user_ids(conn, int(dept_row["id"]))
             return _sample(members, sample)
         id_min = ids_cfg.get("id_min", 9001000001)
-        id_max = ids_cfg.get("id_max", 9001001000)
+        id_max = ids_cfg.get("id_max", 9001002000)
         candidates = db_mod.list_active_users_in_range(conn, id_min, id_max)
         return _sample(candidates, sample or 10)
     finally:

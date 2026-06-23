@@ -2,15 +2,15 @@ name: user-dept-assign
 description: 用户加入部门后继承部门授权角色
 steps:
   - post_user_dept:
-      user_id: 9001001001
+      user_id: 9001002001
       dept_id: 9000100002
       is_primary: false
       status: 1
   - wait_outbox:
-      source_biz_id_contains: "create-dept:9001001001"
+      source_biz_id_contains: "create-dept:9001002001"
       timeout_sec: 60
   - assert:
       users:
-        - user_id: 9001001001
+        - user_id: 9001002001
           roles_contain: [R_USER_BASE, R_SHARED]
           permissions_contain: [harness:shared:view]

@@ -38,7 +38,7 @@ internal_jwt:
 
 test_ids:
   id_min: 9001000001
-  id_max: 9001001000
+  id_max: 9001002000
   dept_fanout: 9000100001
   dept_edge: 9000100002
   u_anchor: 9001000001

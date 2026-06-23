@@ -43,8 +43,8 @@ auth-harness/
 |------|-----------|
 | D_FANOUT / D_EDGE / D_CHILD | `9000100001` / `9000100002` / `9000100003` |
 | P_FANOUT / P_EDGE | `9000600001` / `9000600002` |
-| 扇出用户 | `9001000001` … `9001001000` |
-| u_direct / u_dept / u_post / u_mixed_anchor | `9001001001` … `9001001004` |
+| 扇出用户 | `9001000001` … `9001002000` |
+| u_direct / u_dept / u_post / u_mixed_anchor | `9001002001` … `9001002004` |
 | R_USER_BASE … R_SHARED | `9000200001` … `9000200004` |
 
 ## 快速开始
@@ -123,14 +123,10 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 | 操作 | `source_biz_id_contains` |
 |------|--------------------------|
 | 部门 grant | `9000100001` |
-| 用户直连角色 | `replace-roles:9001001001` |
+| 用户直连角色 | `replace-roles:9001002001` |
 | 岗位 grant | `post:9000600001` |
 | 角色权限 | `assign-permissions:R_SHARED` |
-| 用户部门 | `create-dept:9001001001` |
-
-## CI
-
-`.github/workflows/auth-harness.yml`：push 跑单元测试；`workflow_dispatch` 可跑 `make integration`（需配置 secrets）。
+| 用户部门 | `create-dept:9001002001` |
 
 ## 剩余缺口
 

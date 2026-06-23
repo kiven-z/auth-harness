@@ -2,15 +2,15 @@ name: grant-user-assign
 description: 用户直连角色追加 R_DEPT_MGR，验证单用户失效刷新
 steps:
   - put_user_roles:
-      user_id: 9001001001
+      user_id: 9001002001
       role_ids: [9000200001, 9000200002]
   - wait_outbox:
-      source_biz_id_contains: "replace-roles:9001001001"
+      source_biz_id_contains: "replace-roles:9001002001"
       timeout_sec: 60
   - assert:
       event:
         impacted_user_count_min: 1
       users:
-        - user_id: 9001001001
+        - user_id: 9001002001
           roles_contain: [R_USER_BASE, R_DEPT_MGR]
           permissions_contain: [harness:user:read, harness:dept:manage]

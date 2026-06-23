@@ -9,7 +9,7 @@ steps:
       timeout_sec: 60
   - assert:
       users:
-        - user_id: 9001001002
+        - user_id: 9001002002
           roles_contain: [R_SHARED]
   - move_dept:
       dept_id: 9000100003
