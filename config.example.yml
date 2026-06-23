@@ -42,7 +42,7 @@ test_ids:
   dept_fanout: 9000100001
   dept_edge: 9000100002
   u_anchor: 9001000001
-  u_mixed: 9001000002
+  u_shared: 9001002005
   role_user_base: 9000200001
   role_dept_mgr: 9000200002
   role_post_op: 9000200003

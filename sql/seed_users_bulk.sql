@@ -1,4 +1,4 @@
--- auth-harness: 批量用户（9001000001..9001002000）+ u_mixed
+-- auth-harness: 批量用户（9001000001..9001002000）
 -- 默认密码 BCrypt("password")
 
 DELETE FROM user_dept WHERE user_id BETWEEN 9001000001 AND 9001002100;
@@ -32,10 +32,6 @@ BEGIN
         );
         SET i = i + 1;
     END WHILE;
-
-    -- u_mixed：挂在 D_EDGE
-    INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
-    VALUES (9002002100, 9001000002, 9000100002, 0, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 END$$
 DELIMITER ;
 

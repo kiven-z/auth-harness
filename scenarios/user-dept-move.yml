@@ -3,7 +3,7 @@ description: 用户换部门后权限随新部门授权变化
 steps:
   - put_user_dept:
       user_id: 9001002004
-      relation_id: 9002002002
+      relation_id: 9002002102
       dept_id: 9000100002
       is_primary: true
       status: 1

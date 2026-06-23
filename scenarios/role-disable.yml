@@ -9,7 +9,7 @@ steps:
       timeout_sec: 60
   - assert:
       users:
-        - user_id: 9001000002
+        - user_id: 9001002005
           roles_not_contain: [R_SHARED]
           permissions_not_contain: [harness:shared:view]
   - update_role_meta:

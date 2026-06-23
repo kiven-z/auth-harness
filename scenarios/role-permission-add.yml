@@ -16,5 +16,5 @@ steps:
       timeout_sec: 60
   - assert:
       users:
-        - user_id: 9001000002
+        - user_id: 9001002005
           permissions_contain: [harness:user:read, harness:shared:view]

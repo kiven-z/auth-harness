@@ -18,7 +18,7 @@ cases:
   - id: R-03-role-shared
     kind: ROLE
     role_codes: [R_SHARED]
-    expected_user_ids: [9001000002]
+    expected_user_ids: [9001002005]
 
   - id: M-01-user-dept-child
     kind: USER_DEPT

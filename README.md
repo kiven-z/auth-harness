@@ -44,7 +44,7 @@ auth-harness/
 | D_FANOUT / D_EDGE / D_CHILD | `9000100001` / `9000100002` / `9000100003` |
 | P_FANOUT / P_EDGE | `9000600001` / `9000600002` |
 | 扇出用户 | `9001000001` … `9001002000` |
-| u_direct / u_dept / u_post / u_mixed_anchor | `9001002001` … `9001002004` |
+| u_direct / u_dept / u_post / u_mixed_anchor / u_shared | `9001002001` … `9001002005` |
 | R_USER_BASE … R_SHARED | `9000200001` … `9000200004` |
 
 ## 快速开始

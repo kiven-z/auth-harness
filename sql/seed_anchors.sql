@@ -18,6 +18,8 @@ INSERT INTO sys_user (
      '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'u_post_only'),
     (9001002004, 'harness_u_mixed_a', 'harness_u_mixed_a', 'harness_u_mixed_a@harness.local', '19000002004',
      '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'u_mixed_anchor'),
+    (9001002005, 'harness_u_shared',  'harness_u_shared',  'harness_u_shared@harness.local',  '19000002005',
+     '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'u_shared'),
     (9001002098, 'harness_u_status',  'harness_u_status',  'harness_u_status@harness.local',  '19000002098',
      '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'status disposable'),
     (9001002099, 'harness_u_delete',  'harness_u_delete',  'harness_u_delete@harness.local',  '19000002099',
@@ -26,6 +28,10 @@ INSERT INTO sys_user (
 -- u_dept_only：仅 D_CHILD
 INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
 VALUES (9002002101, 9001002002, 9000100003, 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
+
+-- u_shared：D_EDGE（持有 R_SHARED）
+INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
+VALUES (9002002103, 9001002005, 9000100002, 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 
 -- u_mixed_anchor：D_CHILD + P_FANOUT
 INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
