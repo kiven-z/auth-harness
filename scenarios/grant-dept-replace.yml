@@ -18,9 +18,12 @@ steps:
       impacted_user_count_min: 2000
       users:
         - user_id: 9001000001
-          roles_contain: [R_USER_BASE, R_DEPT_MGR]
+          roles_contain: [R_DEPT_MGR]
+          roles_not_contain: [R_USER_BASE]
           permissions_contain: [harness:dept:manage]
+          permissions_not_contain: [harness:user:read]
       sample_from_dept:
         dept_id: 9000100001
         sample_size: 5
         roles_contain: [R_DEPT_MGR]
+        roles_not_contain: [R_USER_BASE]

@@ -3,7 +3,7 @@ description: 用户移出部门后失去部门授权角色
 steps:
   - delete_user_dept:
       user_id: 9001002002
-      relation_ids: [9002002001]
+      relation_ids: [9002002101]
   - wait_outbox:
       source_biz_id_contains: "delete-dept:9001002002"
       timeout_sec: 60
