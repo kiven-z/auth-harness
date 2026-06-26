@@ -12,12 +12,12 @@ VALUES
     (9000200003, 'R_POST_OP',   'Harness 岗位操作', 1, 3, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
     (9000200004, 'R_SHARED',    'Harness 共享角色',   1, 4, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 
-INSERT INTO sys_permission (id, permission_code, permission_name, permission_type, order_num, status, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO sys_permission (id, permission_code, permission_name, order_num, status, create_time, update_time, create_user, update_user, version, remark)
 VALUES
-    (9000300001, 'harness:user:read',  'Harness 用户读', 1, 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
-    (9000300002, 'harness:dept:manage', 'Harness 部门管', 1, 2, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
-    (9000300003, 'harness:post:operate', 'Harness 岗位操', 1, 3, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
-    (9000300004, 'harness:shared:view',  'Harness 共享视', 1, 4, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
+    (9000300001, 'harness:user:read',  'Harness 用户读', 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    (9000300002, 'harness:dept:manage', 'Harness 部门管', 2, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    (9000300003, 'harness:post:operate', 'Harness 岗位操', 3, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    (9000300004, 'harness:shared:view',  'Harness 共享视', 4, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 
 INSERT INTO sys_role_permission (id, role_id, permission_id, create_time, update_time, create_user, update_user, version, remark)
 VALUES

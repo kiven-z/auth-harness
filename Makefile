@@ -35,6 +35,7 @@ integration: install
 	$(PYTHON) -m auth_harness integration
 
 impact: install
+	$(PYTHON) -m auth_harness seed
 	$(PYTHON) -m auth_harness impact
 
 reconcile: install
