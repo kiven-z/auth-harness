@@ -40,7 +40,7 @@ class ApiClient:
         if response.status_code == 401:
             raise RuntimeError(
                 "登录失败 (401)：请确认 config.yml 中 admin 账号密码正确，"
-                "且目标库中存在该用户并具备 sysDept:update / sysUserRole:update 等权限。"
+                "且目标库中存在该用户并具备 sys:dept:update / sys:userrole:update 等权限。"
                 f" 响应: {body}"
             )
         response.raise_for_status()
@@ -170,7 +170,7 @@ class ApiClient:
         }
         payload.update(changes)
         self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}"
+        url = f"{self.config.system_base_url}/api/system/dept"
         self._put_json(url, payload)
 
     def move_dept(self, dept_id: int, parent_id: int) -> None:
@@ -192,7 +192,7 @@ class ApiClient:
         }
         payload.update(changes)
         self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/role/{role_id}"
+        url = f"{self.config.system_base_url}/api/system/role"
         self._put_json(url, payload)
 
     def update_permission_meta(self, permission_id: int, **changes: Any) -> None:
@@ -208,13 +208,14 @@ class ApiClient:
         }
         payload.update(changes)
         self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/permission/{permission_id}"
+        url = f"{self.config.system_base_url}/api/system/permission"
         self._put_json(url, payload)
 
     def update_post_meta(self, post_id: int, **changes: Any) -> None:
         """更新岗位元数据（名称/排序/状态等）。"""
         detail = self.get_post_detail(post_id)
         payload = {
+            "id": post_id,
             "deptId": detail["deptId"],
             "postCode": detail["postCode"],
             "postName": detail["postName"],
@@ -224,7 +225,7 @@ class ApiClient:
         }
         payload.update(changes)
         self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/post/{post_id}"
+        url = f"{self.config.system_base_url}/api/system/post"
         self._put_json(url, payload)
 
     def batch_update_user_status(self, user_ids: list[int], status: int) -> None:

@@ -75,7 +75,7 @@ def resolve_user_ids(
         if dept_code:
             dept_row = db_mod.fetch_one(
                 conn,
-                "SELECT id FROM sys_dept WHERE dept_code = %s AND is_deleted = 0",
+                "SELECT id FROM sys_dept WHERE dept_code = %s",
                 (dept_code,),
             )
             if not dept_row:

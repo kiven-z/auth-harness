@@ -18,13 +18,13 @@ WITH user_subjects AS (
     SELECT 'DEPT' AS sub_type, dc.ancestor_id AS sub_id
     FROM user_dept ud
     JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-    JOIN sys_dept d ON d.id = ud.dept_id AND d.is_deleted = 0 AND d.status = 1
-    JOIN sys_dept da ON da.id = dc.ancestor_id AND da.is_deleted = 0 AND da.status = 1
+    JOIN sys_dept d ON d.id = ud.dept_id AND d.status = 1
+    JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
     WHERE ud.user_id = %s AND ud.status IN (1, 2)
     UNION ALL
     SELECT 'POST' AS sub_type, up.post_id AS sub_id
     FROM user_post up
-    INNER JOIN sys_post sp ON sp.id = up.post_id AND sp.is_deleted = 0 AND sp.status = 1
+    INNER JOIN sys_post sp ON sp.id = up.post_id AND sp.status = 1
     WHERE up.user_id = %s AND up.status IN (1, 2)
 )
 SELECT DISTINCT r.role_code
@@ -42,13 +42,13 @@ WITH user_subjects AS (
     SELECT 'DEPT' AS sub_type, dc.ancestor_id AS sub_id
     FROM user_dept ud
     JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-    JOIN sys_dept d ON d.id = ud.dept_id AND d.is_deleted = 0 AND d.status = 1
-    JOIN sys_dept da ON da.id = dc.ancestor_id AND da.is_deleted = 0 AND da.status = 1
+    JOIN sys_dept d ON d.id = ud.dept_id AND d.status = 1
+    JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
     WHERE ud.user_id = %s AND ud.status IN (1, 2)
     UNION ALL
     SELECT 'POST' AS sub_type, up.post_id AS sub_id
     FROM user_post up
-    INNER JOIN sys_post sp ON sp.id = up.post_id AND sp.is_deleted = 0 AND sp.status = 1
+    INNER JOIN sys_post sp ON sp.id = up.post_id AND sp.status = 1
     WHERE up.user_id = %s AND up.status IN (1, 2)
 ),
 all_role_ids AS (
@@ -178,8 +178,8 @@ def count_dept_members(conn: pymysql.connections.Connection, dept_id: int) -> in
         SELECT COUNT(DISTINCT ud.user_id) AS cnt
         FROM user_dept ud
         INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-        INNER JOIN sys_dept d ON d.id = ud.dept_id AND d.is_deleted = 0 AND d.status = 1
-        INNER JOIN sys_dept da ON da.id = dc.ancestor_id AND da.is_deleted = 0 AND da.status = 1
+        INNER JOIN sys_dept d ON d.id = ud.dept_id AND d.status = 1
+        INNER JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
         WHERE dc.ancestor_id = %s AND ud.status IN (1, 2)
         """,
         (dept_id,),
