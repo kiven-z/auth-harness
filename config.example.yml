@@ -1,15 +1,16 @@
 # 复制为 config.yml 后填写真实连接信息（config.yml 已 gitignore，勿提交密钥）
 #
 # 环境对照（与 auth-server application-{profile}.yml 一致）：
-#   dev  — MySQL auth_admin_base @ 192.168.3.19，Redis db 0
-#   test — MySQL auth_admin_test @ 192.168.3.4，Redis db 1
+#   dev  — MySQL auth_admin_base @ 192.168.3.19，Redis db 0；auth 20001，system 20002
+#   test — MySQL auth_admin_test @ 192.168.3.4，Redis db 1；auth 21001，system 21002
+#   prod — auth 22001，system 22002（直连服务端口，非网关）
 # 运行 harness 时，后端服务须使用 SPRING_PROFILES_ACTIVE=test；下方默认值为 test 环境。
 
 urls:
   # 管理端 API（system 服务或网关）
-  system: http://localhost:20002
+  system: http://localhost:21002
   # auth 服务（内部 effective-codes）
-  auth: http://localhost:20001
+  auth: http://localhost:21001
 
 mysql:
   host: 192.168.3.4

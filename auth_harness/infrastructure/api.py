@@ -293,24 +293,37 @@ class ApiClient:
 
     def _put_json(self, url: str, payload: dict[str, Any]) -> None:
         response = self.session.put(url, json=payload, timeout=30)
-        response.raise_for_status()
+        self._raise_for_http_error("PUT", url, response)
         body = response.json()
         if body.get("code") != SUCCESS_CODE:
             raise RuntimeError(f"PUT {url} 失败: {body}")
 
     def _post_json(self, url: str, payload: dict[str, Any]) -> None:
         response = self.session.post(url, json=payload, timeout=30)
-        response.raise_for_status()
+        self._raise_for_http_error("POST", url, response)
         body = response.json()
         if body.get("code") != SUCCESS_CODE:
             raise RuntimeError(f"POST {url} 失败: {body}")
 
     def _delete_json(self, url: str, payload: list[Any]) -> None:
         response = self.session.delete(url, json=payload, timeout=30)
-        response.raise_for_status()
+        self._raise_for_http_error("DELETE", url, response)
         body = response.json()
         if body.get("code") != SUCCESS_CODE:
             raise RuntimeError(f"DELETE {url} 失败: {body}")
+
+    @staticmethod
+    def _raise_for_http_error(method: str, url: str, response: requests.Response) -> None:
+        """将 HTTP 错误包装成带响应体的可读异常。"""
+        if response.ok:
+            return
+        try:
+            detail: Any = response.json()
+        except ValueError:
+            detail = response.text
+        raise RuntimeError(
+            f"{method} {url} HTTP {response.status_code}: {detail}"
+        )
 
     def _issue_internal_service_token(self) -> str:
         """签发服务身份内部 JWT（与 InternalTokenProvider.buildServiceToken 对齐）。"""
