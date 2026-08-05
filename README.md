@@ -52,16 +52,17 @@ auth-harness/
 ```bash
 cd auth-harness
 cp config.example.yml config.yml   # 填写 MySQL / Redis / admin / JWT
-export SPRING_PROFILES_ACTIVE=test
+# 直接连业务库 auth_admin + Redis db0（与 Release 种子同库；9000 前缀与演示数据隔离）
+# 管理账号：Administrator / Admin@123456
 
 make install
-make seed          # 会先执行 cleanup.sql 再灌种子
-make cleanup       # 仅清理 9000 前缀测试数据（sql/cleanup.sql）
+make seed          # 只灌/刷新 9000 前缀 harness 数据（先 cleanup，不碰 Release 1~14）
+make cleanup       # 仅清理 9000 前缀
 make preflight
-make p0          # P0 闭环 8 场景
-make integration # 全量 21 场景 + 3 负向
-make impact      # L1 fixture 6 条
-make test        # 单元测试
+make p0            # P0 闭环 8 场景
+make integration   # 全量 21 场景 + 3 负向
+make impact        # L1 fixture 6 条
+make test          # 单元测试
 ```
 
 ## CLI 命令
@@ -118,15 +119,20 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 | `assert_no_outbox` | 负向：不应产生 outbox |
 | `assert` | triple assert（支持 `expect_outbox: false`） |
 
-## Outbox `source_biz_id` 过滤示例
+## Outbox `source_biz_id` 过滤
+
+后端现格式为 `operation:xxxxxxxx`（8 位短 UUID），**不再嵌入业务 ID**。场景里用操作前缀匹配，例如：
 
 | 操作 | `source_biz_id_contains` |
 |------|--------------------------|
-| 部门 grant | `9000100001` |
-| 用户直连角色 | `replace-roles:9001002001` |
-| 岗位 grant | `post:9000600001` |
-| 角色权限 | `assign-permissions:R_SHARED` |
-| 用户部门 | `create-dept:9001002001` |
+| 部门/岗位/用户 grant 全量覆盖 | `replace-roles:` |
+| 角色权限分配 | `assign-permissions:` |
+| 用户部门增/改/清 | `create-dept:` / `update-dept:` / `clear-dept:` |
+| 用户岗位增/清 | `create-post:` / `clear-post:` |
+| 部门移动 | `move:` |
+| 角色/权限元数据更新 | `update:` |
+
+负向场景（`assert_no_outbox`）不设过滤，按全局游标判定。
 
 ## 剩余缺口
 

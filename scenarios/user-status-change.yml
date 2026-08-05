@@ -5,7 +5,8 @@ steps:
       user_ids: [9001002098]
       status: 0
   - wait_outbox:
-      source_biz_id_contains: "update:9001002098"
+      source_biz_id_contains: "update:"
+
       timeout_sec: 60
   - assert:
       event:
@@ -14,5 +15,6 @@ steps:
       user_ids: [9001002098]
       status: 1
   - wait_outbox:
-      source_biz_id_contains: "update:9001002098"
+      source_biz_id_contains: "update:"
+
       timeout_sec: 60

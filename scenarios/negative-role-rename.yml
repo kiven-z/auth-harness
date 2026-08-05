@@ -5,5 +5,4 @@ steps:
       role_id: 9000200004
       roleName: Harness 共享角色（重命名测试）
   - assert_no_outbox:
-      source_biz_id_contains: "R_SHARED"
       grace_sec: 2

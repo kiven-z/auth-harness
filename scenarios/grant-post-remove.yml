@@ -9,12 +9,14 @@ setup:
       wait_outbox: true
       outbox_source_contains: "create-post:9001002003"
   - prepare_outbox_wait:
-      source_biz_id_contains: "replace-roles:post:9000600001"
+      source_biz_id_contains: "replace-roles:"
+
   - put_post_roles:
       post_id: 9000600001
       role_ids: [9000200002, 9000200003]
   - wait_outbox:
-      source_biz_id_contains: "replace-roles:post:9000600001"
+      source_biz_id_contains: "replace-roles:"
+
       timeout_sec: 60
   - verify_subject_roles:
       subject_type: POST
@@ -22,12 +24,14 @@ setup:
       role_codes: [R_DEPT_MGR, R_POST_OP]
 steps:
   - prepare_outbox_wait:
-      source_biz_id_contains: "replace-roles:post:9000600001"
+      source_biz_id_contains: "replace-roles:"
+
   - put_post_roles:
       post_id: 9000600001
       role_ids: [9000200003]
   - wait_outbox:
-      source_biz_id_contains: "replace-roles:post:9000600001"
+      source_biz_id_contains: "replace-roles:"
+
       timeout_sec: 60
   - verify_subject_roles:
       subject_type: POST

@@ -5,5 +5,4 @@ steps:
       post_id: 9000600001
       orderNum: 99
   - assert_no_outbox:
-      source_biz_id_contains: "9000600001"
       grace_sec: 2

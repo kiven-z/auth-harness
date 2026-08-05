@@ -278,7 +278,7 @@ def fetch_outbox_after_id(
         return fetch_one(
             conn,
             """
-            SELECT id, event_id, status, source_biz_id, last_error, processed_at, create_time
+            SELECT id, event_id, status, source_biz_id, last_error, processed_at, created_at
             FROM sys_authorization_invalidation_outbox
             WHERE id > %s AND source_biz_id LIKE %s
             ORDER BY id DESC
@@ -289,7 +289,7 @@ def fetch_outbox_after_id(
     return fetch_one(
         conn,
         """
-        SELECT id, event_id, status, source_biz_id, last_error, processed_at, create_time
+        SELECT id, event_id, status, source_biz_id, last_error, processed_at, created_at
         FROM sys_authorization_invalidation_outbox
         WHERE id > %s
         ORDER BY id DESC

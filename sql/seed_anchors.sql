@@ -8,7 +8,7 @@ DELETE FROM sys_user WHERE id BETWEEN 9001002001 AND 9001002100;
 
 INSERT INTO sys_user (
     id, username, nickname, email, phone, password, status, perm_version,
-    create_time, update_time, create_user, update_user, version, remark
+    created_at, updated_at, created_by, updated_by, version, remark
 ) VALUES
     (9001002001, 'harness_u_direct',  'harness_u_direct',  'harness_u_direct@harness.local',  '19000002001',
      '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'u_direct_only'),
@@ -26,18 +26,18 @@ INSERT INTO sys_user (
      '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'delete disposable');
 
 -- u_dept_only：仅 D_CHILD
-INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES (9002002101, 9001002002, 9000100003, 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 
 -- u_shared：D_EDGE（持有 R_SHARED）
-INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES (9002002103, 9001002005, 9000100002, 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 
 -- u_mixed_anchor：D_CHILD + P_FANOUT
-INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES (9002002102, 9001002004, 9000100003, 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');
 
-INSERT INTO user_post (id, user_id, post_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO user_post (id, user_id, post_id, is_primary, status, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES
     (9002003001, 9001002003, 9000600001, 1, 1, NOW(), NOW(), 1, 1, 0, 'u_post_only'),
     (9002003002, 9001002004, 9000600001, 0, 1, NOW(), NOW(), 1, 1, 0, 'u_mixed_anchor');

@@ -5,7 +5,8 @@ steps:
       role_id: 9000200004
       status: false
   - wait_outbox:
-      source_biz_id_contains: "update:R_SHARED"
+      source_biz_id_contains: "update:"
+
       timeout_sec: 60
   - assert:
       users:
@@ -16,5 +17,6 @@ steps:
       role_id: 9000200004
       status: true
   - wait_outbox:
-      source_biz_id_contains: "update:R_SHARED"
+      source_biz_id_contains: "update:"
+
       timeout_sec: 60

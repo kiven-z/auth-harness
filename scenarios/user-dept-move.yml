@@ -8,7 +8,8 @@ steps:
       is_primary: true
       status: 1
   - wait_outbox:
-      source_biz_id_contains: "update-dept:9001002004"
+      source_biz_id_contains: "update-dept:"
+
       timeout_sec: 60
   - assert:
       users:

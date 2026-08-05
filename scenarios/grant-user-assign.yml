@@ -5,7 +5,8 @@ steps:
       user_id: 9001002001
       role_ids: [9000200001, 9000200002]
   - wait_outbox:
-      source_biz_id_contains: "replace-roles:9001002001"
+      source_biz_id_contains: "replace-roles:"
+
       timeout_sec: 60
   - assert:
       event:

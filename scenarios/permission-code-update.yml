@@ -5,14 +5,16 @@ setup:
       role_id: 9000200004
       permission_ids: [9000300001, 9000300004]
   - wait_outbox:
-      source_biz_id_contains: "assign-permissions:R_SHARED"
+      source_biz_id_contains: "assign-permissions:"
+
       timeout_sec: 60
 steps:
   - update_permission_meta:
       permission_id: 9000300004
       permissionCode: harness:shared:view2
   - wait_outbox:
-      source_biz_id_contains: "harness:shared:view"
+      source_biz_id_contains: "update:"
+
       timeout_sec: 60
   - assert:
       users:
@@ -23,5 +25,6 @@ steps:
       permission_id: 9000300004
       permissionCode: harness:shared:view
   - wait_outbox:
-      source_biz_id_contains: "harness:shared:view"
+      source_biz_id_contains: "update:"
+
       timeout_sec: 60

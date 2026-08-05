@@ -16,7 +16,7 @@ BEGIN
         SET uname = CONCAT('harness_u_', i);
         INSERT INTO sys_user (
             id, username, nickname, email, phone, password, status, perm_version,
-            create_time, update_time, create_user, update_user, version, remark
+            created_at, updated_at, created_by, updated_by, version, remark
         ) VALUES (
             uid, uname, uname,
             CONCAT(uname, '@harness.local'),
@@ -25,7 +25,7 @@ BEGIN
             1, 0,
             NOW(), NOW(), 1, 1, 0, 'auth-harness'
         );
-        INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, create_time, update_time, create_user, update_user, version, remark)
+        INSERT INTO user_dept (id, user_id, dept_id, is_primary, status, created_at, updated_at, created_by, updated_by, version, remark)
         VALUES (
             9002000000 + i, uid, 9000100001, 1, 1,
             NOW(), NOW(), 1, 1, 0, 'auth-harness'

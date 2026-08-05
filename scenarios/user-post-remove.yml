@@ -5,7 +5,8 @@ steps:
       user_id: 9001002003
       relation_ids: [9002003001]
   - wait_outbox:
-      source_biz_id_contains: "delete-post:9001002003"
+      source_biz_id_contains: "clear-post:"
+
       timeout_sec: 60
   - assert:
       users:

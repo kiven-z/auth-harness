@@ -4,7 +4,7 @@ DELETE FROM dept_closure WHERE ancestor_id BETWEEN 9000100000 AND 9000100099
     OR descendant_id BETWEEN 9000100000 AND 9000100099;
 DELETE FROM sys_dept WHERE id BETWEEN 9000100000 AND 9000100099;
 
-INSERT INTO sys_dept (id, parent_id, dept_name, dept_code, status, order_num, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO sys_dept (id, parent_id, dept_name, dept_code, status, order_num, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES
     (9000100000, 0, 'Harness 根部门', 'D_ROOT', 1, 0, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
     (9000100001, 9000100000, 'Harness 扇出部门', 'D_FANOUT', 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),

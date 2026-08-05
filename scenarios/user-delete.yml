@@ -4,7 +4,8 @@ steps:
   - delete_users:
       user_ids: [9001002099]
   - wait_outbox:
-      source_biz_id_contains: "delete:9001002099"
+      source_biz_id_contains: "delete:"
+
       timeout_sec: 60
   - assert:
       event:

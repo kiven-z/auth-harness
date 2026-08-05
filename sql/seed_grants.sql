@@ -2,7 +2,7 @@
 
 DELETE FROM grant_table WHERE id BETWEEN 9000500001 AND 9000500099;
 
-INSERT INTO grant_table (id, subject_type, subject_id, role_id, create_time, update_time, create_user, update_user, version, remark)
+INSERT INTO grant_table (id, subject_type, subject_id, role_id, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES
     -- D_FANOUT 部门角色：R_USER_BASE
     (9000500001, 'DEPT', 9000100001, 9000200001, NOW(), NOW(), 1, 1, 0, 'auth-harness'),

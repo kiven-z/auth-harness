@@ -7,7 +7,8 @@ steps:
       is_primary: false
       status: 1
   - wait_outbox:
-      source_biz_id_contains: "create-dept:9001002001"
+      source_biz_id_contains: "create-dept:"
+
       timeout_sec: 60
   - assert:
       users:

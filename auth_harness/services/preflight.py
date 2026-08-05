@@ -49,8 +49,16 @@ def _check_redis(config: HarnessConfig, failures: list[str]) -> None:
     try:
         client = redis_mod.connect(config)
         client.ping()
-        db_index = config.redis.get("db", 0)
-        print(f"[preflight] Redis (db {db_index}): OK")
+        db_index = int(config.redis.get("db", 0))
+        # 粗检：dev 画像通常在 db0；test 在 db1。空库不一定失败，只告警。
+        sample = next(client.scan_iter(f"{redis_mod.PERM_KEY_PREFIX}*", count=20), None)
+        if sample is None:
+            print(
+                f"[preflight] Redis (db {db_index}): OK（暂无 {redis_mod.PERM_KEY_PREFIX}*；"
+                "若后端是另一 profile，请改 config.yml 的 redis.db / mysql.database）"
+            )
+        else:
+            print(f"[preflight] Redis (db {db_index}): OK（已见画像键）")
     except Exception as exc:
         failures.append(f"Redis: {exc}")
 

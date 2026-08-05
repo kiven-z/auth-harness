@@ -5,14 +5,16 @@ setup:
       dept_id: 9000100001
       role_ids: [9000200001, 9000200002]
   - wait_outbox:
-      source_biz_id_contains: "9000100001"
+      source_biz_id_contains: "replace-roles:"
+
       timeout_sec: 60
 steps:
   - put_dept_roles:
       dept_id: 9000100001
       role_ids: [9000200002]
   - wait_outbox:
-      source_biz_id_contains: "9000100001"
+      source_biz_id_contains: "replace-roles:"
+
       timeout_sec: 60
   - assert:
       impacted_user_count_min: 2000

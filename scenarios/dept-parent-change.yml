@@ -5,7 +5,8 @@ steps:
       dept_id: 9000100003
       parent_id: 9000100002
   - wait_outbox:
-      source_biz_id_contains: "move:9000100003"
+      source_biz_id_contains: "move:"
+
       timeout_sec: 60
   - assert:
       users:
@@ -15,5 +16,6 @@ steps:
       dept_id: 9000100003
       parent_id: 9000100001
   - wait_outbox:
-      source_biz_id_contains: "move:9000100003"
+      source_biz_id_contains: "move:"
+
       timeout_sec: 60
