@@ -206,6 +206,23 @@ def dept_scope_list(
     )
 
 
+@cli.command("data-scope")
+@click.option(
+    "--base-url",
+    default=None,
+    help="网关根地址（默认 config urls.gateway 或 http://127.0.0.1:8080）",
+)
+@click.option("--user", "username", default=None, help="只测单个用户名")
+@click.pass_context
+def data_scope(ctx: click.Context, base_url: str | None, username: str | None) -> None:
+    """数据权限冒烟：先断言 deptScope 画像，再断言 example_order 行级过滤。"""
+    config = ctx.obj["config"]
+    code = run_dept_scope_probe(config, base_url=base_url, username=username)
+    if code != 0:
+        raise SystemExit(code)
+    raise SystemExit(run_dept_scope_list_probe(config, base_url=base_url, username=username))
+
+
 @cli.command("list-scenarios")
 def list_scenarios() -> None:
     """列出内置场景文件。"""

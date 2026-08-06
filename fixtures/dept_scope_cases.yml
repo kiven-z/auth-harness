@@ -1,5 +1,12 @@
 # 演示种子账号 AuthProfile.deptScope 期望（user_scope 覆盖；DEPT_AND_CHILD 已按 dept_closure 展开）
 # 密码统一 Admin@123456；超管 userId=1 硬 ALL
+# 数据源：Release 05 role_scope / 06～07 用户绑定；行级对照见 dept_scope_list_cases.yml
+#
+# 路径盲区账号：
+#   east_role_only    — 无 user_scope，走 role_scope
+#   hr_self_override  — HR role ALL 被 user_scope SELF 盖住
+#   orphan_self       — 无角色无 user_scope → 兜底 SELF
+#   admin_narrow      — ADMIN 功能通配 + user_scope DEPT（≠ 数据全量）
 #
 # values 为集合语义（顺序无关）；ALL / SELF 期望空列表
 
@@ -89,3 +96,27 @@ cases:
     note: user_scope SELF
     scope_type: SELF
     values: []
+
+  - username: east_role_only
+    user_id: 15
+    note: 无 user_scope，走 REGION_MGR_EAST role_scope
+    scope_type: DEPT_AND_CHILD
+    values: [120, 121, 122, 1211, 1212, 1221]
+
+  - username: hr_self_override
+    user_id: 16
+    note: HR role ALL 被 user_scope SELF 覆盖
+    scope_type: SELF
+    values: []
+
+  - username: orphan_self
+    user_id: 17
+    note: 无角色无 user_scope → 兜底 SELF
+    scope_type: SELF
+    values: []
+
+  - username: admin_narrow
+    user_id: 18
+    note: ADMIN 角色功能通配，数据仍为 DEPT 1112
+    scope_type: DEPT
+    values: [1112]

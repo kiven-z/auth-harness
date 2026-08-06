@@ -32,7 +32,7 @@ auth-harness/
     runner/ scenario_runner.py
     services/ preflight.py, reconcile.py, impact.py
   scenarios/          # 23 个 YAML（21 可跑 + 2 待后端）
-  fixtures/           # L1 impact_cases.yml
+  fixtures/           # impact_cases.yml + dept_scope*.yml
   sql/                # 种子与清理
   tests/
 ```
@@ -72,7 +72,7 @@ make test          # 单元测试
 | `make cleanup` / `python -m auth_harness cleanup` | 清理 9000 前缀测试数据（`sql/cleanup.sql`） |
 | `python -m auth_harness seed` | 执行 sql/ 种子（会先跑 cleanup.sql） |
 | `python -m auth_harness run <scenario.yml>` | 单场景 |
-| `python -m auth_harness smoke` | 快速 3 场景 |
+| `python -m auth_harness smoke` | 授权失效快速 3 场景（与数据权限无关） |
 | `python -m auth_harness p0` | P0 套件（8 场景） |
 | `python -m auth_harness integration` | 21 L2 + 3 负向 |
 | `python -m auth_harness impact` | L1 影响面 fixture |
@@ -80,9 +80,19 @@ make test          # 单元测试
 | `python -m auth_harness preflight` | 连通性检查 |
 | `python -m auth_harness dept-scope` | 演示账号登录，断言 `/api/example/me` 的 `deptScope` |
 | `python -m auth_harness dept-scope-list` | 演示账号登录，断言 `/api/example/orders` 行级过滤 |
+| `python -m auth_harness data-scope` | 数据权限冒烟：`dept-scope` → `dept-scope-list` |
 | `python -m auth_harness list-scenarios` | 列出场景文件 |
 
 ### 数据权限探针
+
+与 `make smoke`（授权失效）分开：依赖 Release 演示账号 + `example_order` 种子 + 网关 `/api/example/**` + 已启动的 `service-example`。
+
+**一键冒烟**
+
+```bash
+make data-scope
+# 或：python -m auth_harness data-scope --user north_chen
+```
 
 **阶段 1 — 画像**：验证「配置 → AuthProfile.deptScope」
 
@@ -91,11 +101,11 @@ make dept-scope
 # 或：python -m auth_harness dept-scope --user north_chen
 ```
 
-期望见 `fixtures/dept_scope_cases.yml`。
+期望见 `fixtures/dept_scope_cases.yml`（含路径盲区：`east_role_only` / `hr_self_override` / `orphan_self` / `admin_narrow`）。
 
 **阶段 2 — 行级过滤**：验证「画像 → SQL `@DataScope`」
 
-前置：`example_order` 表已导入（`auth-server/db/example-order-data-scope-demo.sql`），且 `service-example` 已启用 JDBC + `module-security-data-permission`。
+前置：空库已跑 Release `run-init.sh`（含 `13-seed-example-order.sql`，订单 id 1～12）；已有库可补灌 `auth-server/db/example-order-data-scope-demo.sql`。
 
 ```bash
 make dept-scope-list

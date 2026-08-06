@@ -1,20 +1,20 @@
 # 行级过滤期望：GET /api/example/orders 返回的 id 集合
-# 依赖 example_order 种子（db/example-order-data-scope-demo.sql）+ 演示账号 user_scope
+# 依赖 Release db/13-seed-example-order.sql（run-init.sh）+ 演示账号 1～18
 
 password: Admin@123456
 
 cases:
   - username: Administrator
     note: 超管 ALL
-    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
   - username: hr_li
     note: user_scope ALL
-    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
   - username: audit_wang
     note: user_scope ALL
-    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
   - username: north_chen
     note: 华北含子树 → 2/3/4/5
@@ -25,7 +25,7 @@ cases:
     expected_ids: [6, 7, 10]
 
   - username: south_zhou
-    note: 华南含子树 → 8/9
+    note: 华南含子树 → 8/9（不含 11：SELF 样例挂总部 100）
     expected_ids: [8, 9]
 
   - username: bj_rd_mgr
@@ -59,3 +59,19 @@ cases:
   - username: sz_sales_a
     note: SELF uid=14 → 8
     expected_ids: [8]
+
+  - username: east_role_only
+    note: 仅 role_scope 华东 → 同 east_zhao
+    expected_ids: [6, 7, 10]
+
+  - username: hr_self_override
+    note: user SELF 盖住 role ALL → 仅 11
+    expected_ids: [11]
+
+  - username: orphan_self
+    note: 兜底 SELF → 仅 12
+    expected_ids: [12]
+
+  - username: admin_narrow
+    note: ADMIN≠数据全量 → 仅 DEPT 1112 → 4
+    expected_ids: [4]

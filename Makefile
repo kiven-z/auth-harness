@@ -1,4 +1,4 @@
-.PHONY: auth-test install seed cleanup smoke p0 integration reconcile run preflight test impact dept-scope dept-scope-list
+.PHONY: auth-test install seed cleanup smoke p0 integration reconcile run preflight test impact dept-scope dept-scope-list data-scope
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -52,6 +52,9 @@ dept-scope: install
 
 dept-scope-list: install
 	$(PYTHON) -m auth_harness dept-scope-list $(ARGS)
+
+data-scope: install
+	$(PYTHON) -m auth_harness data-scope $(ARGS)
 
 test: install
 	$(PYTHON) -m unittest discover -s tests -v
