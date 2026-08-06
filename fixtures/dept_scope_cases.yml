@@ -1,0 +1,91 @@
+# 演示种子账号 AuthProfile.deptScope 期望（user_scope 覆盖；DEPT_AND_CHILD 已按 dept_closure 展开）
+# 密码统一 Admin@123456；超管 userId=1 硬 ALL
+#
+# values 为集合语义（顺序无关）；ALL / SELF 期望空列表
+
+password: Admin@123456
+
+cases:
+  - username: Administrator
+    user_id: 1
+    note: 超管硬旁路
+    scope_type: ALL
+    values: []
+
+  - username: hr_li
+    user_id: 2
+    note: user_scope ALL
+    scope_type: ALL
+    values: []
+
+  - username: audit_wang
+    user_id: 3
+    note: user_scope ALL
+    scope_type: ALL
+    values: []
+
+  - username: north_chen
+    user_id: 4
+    note: 华北 110 含子树
+    scope_type: DEPT_AND_CHILD
+    values: [110, 111, 112, 1111, 1112, 1121]
+
+  - username: east_zhao
+    user_id: 5
+    note: 华东 120 含子树
+    scope_type: DEPT_AND_CHILD
+    values: [120, 121, 122, 1211, 1212, 1221]
+
+  - username: south_zhou
+    user_id: 6
+    note: 华南 130 含子树
+    scope_type: DEPT_AND_CHILD
+    values: [130, 131, 132, 1311, 1312, 1321]
+
+  - username: bj_rd_mgr
+    user_id: 7
+    note: 北京研发 1111 叶子
+    scope_type: DEPT_AND_CHILD
+    values: [1111]
+
+  - username: sh_pd_mgr
+    user_id: 8
+    note: 上海产品 1211 叶子
+    scope_type: DEPT_AND_CHILD
+    values: [1211]
+
+  - username: sz_sales_mgr
+    user_id: 9
+    note: 深圳销售 1312 叶子
+    scope_type: DEPT_AND_CHILD
+    values: [1312]
+
+  - username: bj_dev_a
+    user_id: 10
+    note: user_scope SELF
+    scope_type: SELF
+    values: []
+
+  - username: bj_sales_a
+    user_id: 11
+    note: 仅北京销售 1112（不含下级）
+    scope_type: DEPT
+    values: [1112]
+
+  - username: sh_pm_a
+    user_id: 12
+    note: user_scope SELF
+    scope_type: SELF
+    values: []
+
+  - username: hz_dev_a
+    user_id: 13
+    note: 仅杭州研发 1221
+    scope_type: DEPT
+    values: [1221]
+
+  - username: sz_sales_a
+    user_id: 14
+    note: user_scope SELF
+    scope_type: SELF
+    values: []

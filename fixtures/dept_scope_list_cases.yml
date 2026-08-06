@@ -1,0 +1,61 @@
+# 行级过滤期望：GET /api/example/orders 返回的 id 集合
+# 依赖 example_order 种子（db/example-order-data-scope-demo.sql）+ 演示账号 user_scope
+
+password: Admin@123456
+
+cases:
+  - username: Administrator
+    note: 超管 ALL
+    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  - username: hr_li
+    note: user_scope ALL
+    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  - username: audit_wang
+    note: user_scope ALL
+    expected_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+  - username: north_chen
+    note: 华北含子树 → 2/3/4/5
+    expected_ids: [2, 3, 4, 5]
+
+  - username: east_zhao
+    note: 华东含子树 → 6/7/10
+    expected_ids: [6, 7, 10]
+
+  - username: south_zhou
+    note: 华南含子树 → 8/9
+    expected_ids: [8, 9]
+
+  - username: bj_rd_mgr
+    note: 仅 1111 → 3
+    expected_ids: [3]
+
+  - username: sh_pd_mgr
+    note: 仅 1211 → 6
+    expected_ids: [6]
+
+  - username: sz_sales_mgr
+    note: 仅 1312 → 8
+    expected_ids: [8]
+
+  - username: bj_dev_a
+    note: SELF uid=10 → 3
+    expected_ids: [3]
+
+  - username: bj_sales_a
+    note: DEPT 1112 → 4
+    expected_ids: [4]
+
+  - username: sh_pm_a
+    note: SELF uid=12 → 6
+    expected_ids: [6]
+
+  - username: hz_dev_a
+    note: DEPT 1221 → 7
+    expected_ids: [7]
+
+  - username: sz_sales_a
+    note: SELF uid=14 → 8
+    expected_ids: [8]

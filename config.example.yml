@@ -7,10 +7,12 @@
 # 管理账号：Release 种子 Administrator / Admin@123456（全员同密）
 
 urls:
-  # 管理端 API（IDE 本地直连 system；Docker 可改为 http://localhost:8080）
-  system: http://localhost:20002
-  # auth 服务（内部 effective-codes）
-  auth: http://localhost:20001
+    # 管理端 API（IDE 本地直连 system；Docker 可改为 http://localhost:8080）
+    system: http://localhost:20002
+    # auth 服务（内部 effective-codes）
+    auth: http://localhost:20001
+    # 网关（dept-scope 探针：登录 + /api/example/me）
+    gateway: http://127.0.0.1:8080
 
 mysql:
   host: 192.168.3.4

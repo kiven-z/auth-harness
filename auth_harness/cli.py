@@ -16,6 +16,8 @@ from auth_harness.runner.scenario_runner import (
     run_scenario,
     run_smoke,
 )
+from auth_harness.services.dept_scope_list_probe import run_dept_scope_list_probe
+from auth_harness.services.dept_scope_probe import run_dept_scope_probe
 from auth_harness.services.impact import run_impact_suite
 from auth_harness.services.preflight import run_preflight
 from auth_harness.services.reconcile import reconcile_many, resolve_user_ids
@@ -136,6 +138,72 @@ def impact(ctx: click.Context, fixture_path: Path | None) -> None:
     """L1 影响面反查（SQL fixture 驱动）。"""
     config = ctx.obj["config"]
     raise SystemExit(run_impact_suite(config, fixture_path))
+
+
+@cli.command("dept-scope")
+@click.option(
+    "--fixture",
+    "fixture_path",
+    type=click.Path(path_type=Path, exists=True),
+    default=None,
+    help="deptScope fixture（默认 fixtures/dept_scope_cases.yml）",
+)
+@click.option(
+    "--base-url",
+    default=None,
+    help="网关根地址（默认 config urls.gateway 或 http://127.0.0.1:8080）",
+)
+@click.option("--user", "username", default=None, help="只测单个用户名")
+@click.pass_context
+def dept_scope(
+    ctx: click.Context,
+    fixture_path: Path | None,
+    base_url: str | None,
+    username: str | None,
+) -> None:
+    """登录演示账号，断言 /api/example/me 的 AuthProfile.deptScope。"""
+    config = ctx.obj["config"]
+    raise SystemExit(
+        run_dept_scope_probe(
+            config,
+            fixture_path=fixture_path,
+            base_url=base_url,
+            username=username,
+        )
+    )
+
+
+@cli.command("dept-scope-list")
+@click.option(
+    "--fixture",
+    "fixture_path",
+    type=click.Path(path_type=Path, exists=True),
+    default=None,
+    help="行级过滤 fixture（默认 fixtures/dept_scope_list_cases.yml）",
+)
+@click.option(
+    "--base-url",
+    default=None,
+    help="网关根地址（默认 config urls.gateway 或 http://127.0.0.1:8080）",
+)
+@click.option("--user", "username", default=None, help="只测单个用户名")
+@click.pass_context
+def dept_scope_list(
+    ctx: click.Context,
+    fixture_path: Path | None,
+    base_url: str | None,
+    username: str | None,
+) -> None:
+    """登录演示账号，断言 /api/example/orders 行级过滤 id 集合。"""
+    config = ctx.obj["config"]
+    raise SystemExit(
+        run_dept_scope_list_probe(
+            config,
+            fixture_path=fixture_path,
+            base_url=base_url,
+            username=username,
+        )
+    )
 
 
 @cli.command("list-scenarios")

@@ -78,7 +78,30 @@ make test          # 单元测试
 | `python -m auth_harness impact` | L1 影响面 fixture |
 | `python -m auth_harness reconcile` | 批量对账 |
 | `python -m auth_harness preflight` | 连通性检查 |
+| `python -m auth_harness dept-scope` | 演示账号登录，断言 `/api/example/me` 的 `deptScope` |
+| `python -m auth_harness dept-scope-list` | 演示账号登录，断言 `/api/example/orders` 行级过滤 |
 | `python -m auth_harness list-scenarios` | 列出场景文件 |
+
+### 数据权限探针
+
+**阶段 1 — 画像**：验证「配置 → AuthProfile.deptScope」
+
+```bash
+make dept-scope
+# 或：python -m auth_harness dept-scope --user north_chen
+```
+
+期望见 `fixtures/dept_scope_cases.yml`。
+
+**阶段 2 — 行级过滤**：验证「画像 → SQL `@DataScope`」
+
+前置：`example_order` 表已导入（`auth-server/db/example-order-data-scope-demo.sql`），且 `service-example` 已启用 JDBC + `module-security-data-permission`。
+
+```bash
+make dept-scope-list
+```
+
+期望见 `fixtures/dept_scope_list_cases.yml`。
 
 ## 场景清单（23）
 
