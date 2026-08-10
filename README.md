@@ -22,8 +22,9 @@ YAML scenario → ScenarioRunner → StepRegistry (步骤策略)
 auth-harness/
   auth_harness/
     cli.py
+    perms/              # 从 @auth.decide 扫权限码 → check/gen/apply
     domain/
-      oracle.py, paths.py, impact.py    # L1 影响面 SQL
+      oracle.py, paths.py, impact.py
     infrastructure/
       api.py, db.py, redis_client.py
     steps/ handlers.py, registry.py, context.py
@@ -31,9 +32,9 @@ auth-harness/
     wait/ outbox.py
     runner/ scenario_runner.py
     services/ preflight.py, reconcile.py, impact.py
-  scenarios/          # 23 个 YAML（21 可跑 + 2 待后端）
-  fixtures/           # impact_cases.yml + dept_scope*.yml
-  sql/                # 种子与清理
+  scenarios/
+  fixtures/             # impact / dept_scope / permissions_catalog.yml
+  sql/
   tests/
 ```
 
@@ -82,6 +83,28 @@ make test          # 单元测试
 | `python -m auth_harness dept-scope-list` | 演示账号登录，断言 `/api/example/orders` 行级过滤 |
 | `python -m auth_harness data-scope` | 数据权限冒烟：`dept-scope` → `dept-scope-list` |
 | `python -m auth_harness list-scenarios` | 列出场景文件 |
+| `python -m auth_harness perms scan` | 扫描 `@auth.decide` 权限码 |
+| `python -m auth_harness perms check` | 对照 Release seed（或 `--db`）校验漂移 |
+| `python -m auth_harness perms gen` | 为缺失码生成 upsert SQL |
+| `python -m auth_harness perms apply` | 把缺失码插入开发库（不改已有名称） |
+
+### 权限码同步（perms）
+
+接口上的 `@PreAuthorize("@auth.decide('sys:user:query')")` 是权限码真源；`sys_permission` / Release seed 是授权目录。不要在后端启动时自动写库，用本工具对齐：
+
+```bash
+make perms-scan
+make perms-check                          # 对照 assets/Release/db/02-seed-sys-permission.sql
+make perms-check ARGS='--db'              # 对照开发库（需 config.yml）
+make perms-gen ARGS='-o /tmp/perms.sql'   # 生成缺失码 SQL
+make perms-apply                          # 开发库补缺（需 config.yml）
+```
+
+中文名来自 `fixtures/permissions_catalog.yml`（`资源-动作`）。新资源/动作先补映射，再 apply。演示码（`service-example`、`sys:xxx`）已忽略。
+
+- **missing**：代码有、seed/DB 没有 → check 失败，gen/apply 可补
+- **orphan**：seed/DB 有、代码没有 → 默认只提示；`--strict` 才失败；apply **不删**
+- **生产**：只提交/执行 gen 出的 SQL，不要对生产库跑 apply 自动化删改
 
 ### 数据权限探针
 
