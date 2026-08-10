@@ -11,6 +11,10 @@ ignore_codes:
   - sys:xxx
   - sys:user:add
 
+# --prune 时不删（harness 测试权限等）
+prune_protect_prefixes:
+  - "harness:"
+
 resources:
   log:authaudit: 权限审计日志
   log:login: 登录日志

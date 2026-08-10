@@ -85,8 +85,8 @@ make test          # 单元测试
 | `python -m auth_harness list-scenarios` | 列出场景文件 |
 | `python -m auth_harness perms scan` | 扫描 `@auth.decide` 权限码 |
 | `python -m auth_harness perms check` | 对照 Release seed（或 `--db`）校验漂移 |
-| `python -m auth_harness perms gen` | 为缺失码生成 upsert SQL |
-| `python -m auth_harness perms apply` | 把缺失码插入开发库（不改已有名称） |
+| `python -m auth_harness perms gen` | 为缺失码生成 upsert SQL（`--prune` 可附带 DELETE orphan） |
+| `python -m auth_harness perms apply` | 开发库补缺（`--prune` 同时删 orphan） |
 
 ### 权限码同步（perms）
 
@@ -96,15 +96,17 @@ make test          # 单元测试
 make perms-scan
 make perms-check                          # 对照 assets/Release/db/02-seed-sys-permission.sql
 make perms-check ARGS='--db'              # 对照开发库（需 config.yml）
-make perms-gen ARGS='-o /tmp/perms.sql'   # 生成缺失码 SQL
-make perms-apply                          # 开发库补缺（需 config.yml）
+make perms-gen ARGS='-o /tmp/perms.sql'   # 只生成缺失码 INSERT
+make perms-gen ARGS='--prune -o /tmp/perms.sql'   # INSERT + DELETE orphan
+make perms-apply                          # 开发库只补缺
+make perms-apply ARGS='--prune'           # 开发库对齐代码：补缺并删 orphan
 ```
 
-中文名来自 `fixtures/permissions_catalog.yml`（`资源-动作`）。新资源/动作先补映射，再 apply。演示码（`service-example`、`sys:xxx`）已忽略。
+中文名来自 `fixtures/permissions_catalog.yml`（`资源-动作`）。新资源/动作先补映射，再 apply。演示码（`service-example`、`sys:xxx`）已忽略；`harness:` 前缀受 `prune_protect_prefixes` 保护，`--prune` 不会删。
 
 - **missing**：代码有、seed/DB 没有 → check 失败，gen/apply 可补
-- **orphan**：seed/DB 有、代码没有 → 默认只提示；`--strict` 才失败；apply **不删**
-- **生产**：只提交/执行 gen 出的 SQL，不要对生产库跑 apply 自动化删改
+- **orphan**：seed/DB 有、代码没有 → 默认只提示；`--strict` 失败；**`--prune` 生成/执行 DELETE**（CASCADE 清角色绑定，适合开发库）
+- **生产**：不要对生产库跑 `apply --prune`
 
 ### 数据权限探针
 

@@ -20,6 +20,7 @@ class PermissionsCatalog:
     overrides: dict[str, str] = field(default_factory=dict)
     ignore_codes: frozenset[str] = field(default_factory=frozenset)
     exclude_globs: tuple[str, ...] = ()
+    prune_protect_prefixes: tuple[str, ...] = ()
 
     def resolve_name(self, code: str) -> str | None:
         """解析展示名；无法解析返回 None。"""
@@ -36,6 +37,10 @@ class PermissionsCatalog:
             return None
         return f"{resource_name}-{action_name}"
 
+    def is_prune_protected(self, code: str) -> bool:
+        """是否禁止被 --prune 删除。"""
+        return any(code.startswith(prefix) for prefix in self.prune_protect_prefixes)
+
 
 def load_catalog(path: Path | None = None) -> PermissionsCatalog:
     """从 YAML 加载目录。"""
@@ -50,4 +55,5 @@ def load_catalog(path: Path | None = None) -> PermissionsCatalog:
         overrides={str(k): str(v) for k, v in (raw.get("overrides") or {}).items()},
         ignore_codes=frozenset(str(x) for x in (raw.get("ignore_codes") or [])),
         exclude_globs=tuple(str(x) for x in (raw.get("exclude_globs") or [])),
+        prune_protect_prefixes=tuple(str(x) for x in (raw.get("prune_protect_prefixes") or [])),
     )

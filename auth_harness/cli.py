@@ -334,7 +334,12 @@ def perms_check(
 
 @perms_group.command("gen")
 @_perms_path_options
-@click.option("--db", "against_db", is_flag=True, help="按开发库缺失生成，而非 seed")
+@click.option("--db", "against_db", is_flag=True, help="按开发库差异生成，而非 seed")
+@click.option(
+    "--prune",
+    is_flag=True,
+    help="同时生成删除 orphan 的 SQL（开发库对齐用；会 CASCADE 角色绑定）",
+)
 @click.option(
     "-o",
     "--output",
@@ -350,66 +355,76 @@ def perms_gen(
     seed_path: Path,
     catalog_path: Path,
     against_db: bool,
+    prune: bool,
     output_path: Path | None,
 ) -> None:
-    """为缺失权限码生成 upsert SQL。"""
+    """为缺失权限码生成 upsert SQL；可选 --prune 删除 orphan。"""
     config = require_config(ctx) if against_db else ctx.obj.get("config")
     try:
-        sql, entries, diff = perms_service.generate_upsert_sql(
+        plan = perms_service.build_sync_plan(
             server_root=server_root,
             catalog_path=catalog_path,
             seed_path=seed_path,
             config=config,
             against_db=against_db,
+            prune=prune,
         )
     except FileNotFoundError as exc:
         raise click.ClickException(str(exc)) from exc
-    click.echo(
-        perms_service.format_diff_report(diff),
-        err=True,
-    )
-    if diff.unresolved_names:
-        unresolved_missing = [c for c in diff.missing if c in diff.unresolved_names]
+    click.echo(perms_service.format_diff_report(plan.diff), err=True)
+    if plan.diff.unresolved_names:
+        unresolved_missing = [c for c in plan.diff.missing if c in plan.diff.unresolved_names]
         if unresolved_missing:
             raise click.ClickException(
                 "无法解析中文名，请补 fixtures/permissions_catalog.yml: "
                 + ", ".join(unresolved_missing)
             )
     if output_path is None:
-        click.echo(sql, nl=False)
+        click.echo(plan.sql, nl=False)
     else:
-        output_path.write_text(sql, encoding="utf-8")
-        click.echo(f"[perms gen] wrote {len(entries)} rows -> {output_path}", err=True)
-    click.echo(f"[perms gen] missing={len(diff.missing)} generated={len(entries)}", err=True)
-
+        output_path.write_text(plan.sql, encoding="utf-8")
+        click.echo(f"[perms gen] wrote -> {output_path}", err=True)
+    click.echo(
+        f"[perms gen] insert={len(plan.inserts)} prune={len(plan.prune_codes)}",
+        err=True,
+    )
 
 
 @perms_group.command("apply")
 @_perms_path_options
+@click.option(
+    "--prune",
+    is_flag=True,
+    help="同时删除 orphan（开发库对齐；会 CASCADE 清理 sys_role_permission）",
+)
 @click.pass_context
 def perms_apply(
     ctx: click.Context,
     server_root: Path,
     seed_path: Path,
     catalog_path: Path,
+    prune: bool,
 ) -> None:
-    """把代码里缺失的权限码插入开发库（已存在跳过，不改名）。"""
+    """把代码权限对齐到开发库：补缺；加 --prune 则删 orphan。"""
     del seed_path
     config = require_config(ctx)
     try:
-        inserted, entries, diff = perms_service.apply_missing(
+        inserted, pruned, entries, prune_codes, diff = perms_service.apply_missing(
             config,
             server_root=server_root,
             catalog_path=catalog_path,
+            prune=prune,
         )
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(perms_service.format_diff_report(diff))
-    click.echo(f"[perms apply] inserted={inserted}")
+    click.echo(f"[perms apply] inserted={inserted} pruned={pruned}")
     for code, name, order_num in entries:
         click.echo(f"  + {code} ({name}) order={order_num}")
-    if diff.orphan:
-        click.echo(f"[perms apply] orphan left untouched: {len(diff.orphan)}")
+    for code in prune_codes:
+        click.echo(f"  - {code}")
+    if diff.orphan and not prune:
+        click.echo(f"[perms apply] orphan left untouched: {len(diff.orphan)}（加 --prune 可删）")
 
 
 def main() -> None:

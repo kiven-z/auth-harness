@@ -16,7 +16,7 @@ from auth_harness.perms.catalog import PermissionsCatalog, load_catalog
 from auth_harness.perms.scan import ScannedPermission, scan_java_permissions, unique_codes
 from auth_harness.perms.seed_sql import (
     SeedPermissionRow,
-    build_upsert_sql,
+    build_sync_sql,
     parse_seed_sql,
     seed_codes,
 )
@@ -36,6 +36,16 @@ class PermissionDiff:
     @property
     def ok(self) -> bool:
         return not self.missing and not self.unresolved_names
+
+
+@dataclass(frozen=True)
+class SyncPlan:
+    """补缺 + 可选 prune 的执行计划。"""
+
+    sql: str
+    inserts: list[tuple[str, str, int]]
+    prune_codes: list[str]
+    diff: PermissionDiff
 
 
 def default_server_root() -> Path:
@@ -88,7 +98,8 @@ def check_permissions(
         baseline = seed_codes(parse_seed_sql(path))
 
     missing = sorted(set(codes) - baseline)
-    orphan = sorted(baseline - set(codes))
+    raw_orphan = sorted(baseline - set(codes))
+    orphan = [code for code in raw_orphan if not catalog.is_prune_protected(code)]
     unresolved = [code for code in codes if catalog.resolve_name(code) is None]
     diff = PermissionDiff(
         code_codes=codes,
@@ -112,8 +123,32 @@ def generate_upsert_sql(
     config: HarnessConfig | None = None,
     against_db: bool = False,
     order_step: int = 10,
+    prune: bool = False,
 ) -> tuple[str, list[tuple[str, str, int]], PermissionDiff]:
-    """为缺失码生成 upsert SQL。"""
+    """为缺失码生成 upsert SQL；prune=True 时附带删除 orphan。"""
+    plan = build_sync_plan(
+        server_root=server_root,
+        catalog_path=catalog_path,
+        seed_path=seed_path,
+        config=config,
+        against_db=against_db,
+        order_step=order_step,
+        prune=prune,
+    )
+    return plan.sql, plan.inserts, plan.diff
+
+
+def build_sync_plan(
+    *,
+    server_root: Path | None = None,
+    catalog_path: Path | None = None,
+    seed_path: Path | None = None,
+    config: HarnessConfig | None = None,
+    against_db: bool = False,
+    order_step: int = 10,
+    prune: bool = False,
+) -> SyncPlan:
+    """计算同步计划（INSERT missing + 可选 DELETE orphan）。"""
     diff = check_permissions(
         server_root=server_root,
         catalog_path=catalog_path,
@@ -129,8 +164,9 @@ def generate_upsert_sql(
         if name is None:
             continue
         entries.append((code, name, start_order + index * order_step))
-    sql = build_upsert_sql(entries)
-    return sql, entries, diff
+    prune_codes = list(diff.orphan) if prune else []
+    sql = build_sync_sql(entries, prune_codes, prune=prune)
+    return SyncPlan(sql=sql, inserts=entries, prune_codes=prune_codes, diff=diff)
 
 
 def apply_missing(
@@ -139,33 +175,35 @@ def apply_missing(
     server_root: Path | None = None,
     catalog_path: Path | None = None,
     order_step: int = 10,
-) -> tuple[int, list[tuple[str, str, int]], PermissionDiff]:
-    """将缺失权限码插入开发库（已存在跳过）。"""
-    sql, entries, diff = generate_upsert_sql(
+    prune: bool = False,
+) -> tuple[int, int, list[tuple[str, str, int]], list[str], PermissionDiff]:
+    """将缺失权限码插入开发库；prune=True 时删除 orphan。"""
+    plan = build_sync_plan(
         server_root=server_root,
         catalog_path=catalog_path,
         config=config,
         against_db=True,
         order_step=order_step,
+        prune=prune,
     )
-    if not entries:
-        return 0, entries, diff
-    if diff.unresolved_names:
-        unresolved = [c for c in diff.missing if c in diff.unresolved_names]
+    if plan.diff.unresolved_names:
+        unresolved = [c for c in plan.diff.missing if c in plan.diff.unresolved_names]
         if unresolved:
             raise ValueError(
                 "无法解析中文名，请先补 fixtures/permissions_catalog.yml: "
                 + ", ".join(unresolved)
             )
+    if not plan.inserts and not plan.prune_codes:
+        return 0, 0, plan.inserts, plan.prune_codes, plan.diff
+
     conn = db_mod.connect(config)
     try:
         with conn.cursor() as cursor:
-            for statement in _split_statements(sql):
-                if statement.strip() and not statement.strip().startswith("--"):
-                    cursor.execute(statement)
+            for statement in _split_statements(plan.sql):
+                cursor.execute(statement)
     finally:
         conn.close()
-    return len(entries), entries, diff
+    return len(plan.inserts), len(plan.prune_codes), plan.inserts, plan.prune_codes, plan.diff
 
 
 def format_diff_report(diff: PermissionDiff, *, fail_on_orphan: bool = False) -> str:

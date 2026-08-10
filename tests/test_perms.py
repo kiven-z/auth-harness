@@ -6,9 +6,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from auth_harness.perms import service as perms_service
 from auth_harness.perms.catalog import PermissionsCatalog, load_catalog
 from auth_harness.perms.scan import scan_java_permissions, unique_codes
-from auth_harness.perms.seed_sql import build_upsert_sql, parse_seed_sql
+from auth_harness.perms.seed_sql import build_prune_sql, build_sync_sql, build_upsert_sql, parse_seed_sql
 from auth_harness.perms.service import check_permissions, format_diff_report
 from auth_harness.domain.paths import (
     DEFAULT_AUTH_SERVER_ROOT,
@@ -81,6 +82,18 @@ class SeedSqlTest(unittest.TestCase):
         self.assertIn("sys:user:query", sql)
         self.assertIn("ON DUPLICATE KEY UPDATE", sql)
 
+    def test_build_prune_sql(self) -> None:
+        sql = build_prune_sql(["sys:file:export", "sys:old:query"])
+        self.assertIn("DELETE FROM sys_permission", sql)
+        self.assertIn("sys:file:export", sql)
+        self.assertIn("sys:old:query", sql)
+
+    def test_build_sync_sql_with_prune_only(self) -> None:
+        sql = build_sync_sql([], ["sys:file:export"], prune=True)
+        self.assertNotIn("INSERT INTO", sql)
+        self.assertIn("DELETE FROM sys_permission", sql)
+        self.assertIn("sys:file:export", sql)
+
 
 class CheckAgainstSeedTest(unittest.TestCase):
     def test_check_against_release_seed(self) -> None:
@@ -99,6 +112,28 @@ class CheckAgainstSeedTest(unittest.TestCase):
         self.assertEqual(diff.missing, [])
         # seed 可能残留代码已删除的码（如 sys:file:export），仅报告不失败
         self.assertIsInstance(diff.orphan, list)
+
+    def test_gen_prune_includes_orphan_delete(self) -> None:
+        if not DEFAULT_PERMISSION_SEED_PATH.exists():
+            self.skipTest("Release seed 不在本机")
+        if not DEFAULT_AUTH_SERVER_ROOT.exists():
+            self.skipTest("auth-server 不在本机")
+        plan = perms_service.build_sync_plan(
+            server_root=DEFAULT_AUTH_SERVER_ROOT,
+            seed_path=DEFAULT_PERMISSION_SEED_PATH,
+            prune=True,
+        )
+        if "sys:file:export" in plan.diff.orphan:
+            self.assertIn("sys:file:export", plan.prune_codes)
+            self.assertIn("DELETE FROM sys_permission", plan.sql)
+        self.assertEqual(plan.inserts, [])
+
+
+class PruneProtectTest(unittest.TestCase):
+    def test_harness_prefix_protected(self) -> None:
+        catalog = load_catalog(PERMISSIONS_CATALOG_PATH)
+        self.assertTrue(catalog.is_prune_protected("harness:user:read"))
+        self.assertFalse(catalog.is_prune_protected("sys:file:export"))
 
 if __name__ == "__main__":
     unittest.main()

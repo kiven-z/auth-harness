@@ -80,5 +80,37 @@ def build_upsert_sql(
     return "\n".join(lines)
 
 
+def build_prune_sql(orphan_codes: list[str]) -> str:
+    """生成删除 orphan 权限码的 SQL（依赖 FK CASCADE 清角色绑定）。"""
+    if not orphan_codes:
+        return "-- no orphan permissions to prune\n"
+    codes_sql = ",\n  ".join(f"'{_escape(code)}'" for code in orphan_codes)
+    return (
+        "-- 删除代码中已不存在的权限码（会 CASCADE 清理 sys_role_permission）\n"
+        "DELETE FROM sys_permission\n"
+        f"WHERE permission_code IN (\n  {codes_sql}\n);\n"
+    )
+
+
+def build_sync_sql(
+    entries: list[tuple[str, str, int]],
+    orphan_codes: list[str],
+    *,
+    prune: bool,
+    remark: str = "synced from code",
+    created_by: int = 1,
+) -> str:
+    """生成补缺 + 可选删 orphan 的同步 SQL。"""
+    parts: list[str] = []
+    insert_sql = build_upsert_sql(entries, remark=remark, created_by=created_by)
+    if entries or not prune:
+        parts.append(insert_sql.rstrip())
+    if prune:
+        parts.append(build_prune_sql(orphan_codes).rstrip())
+    if not parts:
+        return "-- nothing to sync\n"
+    return "\n\n".join(parts) + "\n"
+
+
 def _escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace("'", "\\'")
