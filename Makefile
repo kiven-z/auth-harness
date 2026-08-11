@@ -1,4 +1,4 @@
-.PHONY: auth-test install seed cleanup smoke p0 integration reconcile run preflight test impact dept-scope dept-scope-list data-scope perms-scan perms-check perms-gen perms-apply
+.PHONY: auth-test install seed cleanup smoke p0 integration reconcile run preflight test impact dept-scope dept-scope-list data-scope example-order-export perms-scan perms-check perms-gen perms-apply
 
 VENV ?= .venv
 PYTHON := $(VENV)/bin/python
@@ -55,6 +55,9 @@ dept-scope-list: install
 
 data-scope: install
 	$(PYTHON) -m auth_harness data-scope $(ARGS)
+
+example-order-export: install
+	$(PYTHON) -m auth_harness example-order-export $(ARGS)
 
 test: install
 	$(PYTHON) -m unittest discover -s tests -v

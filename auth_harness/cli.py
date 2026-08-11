@@ -24,6 +24,7 @@ from auth_harness.runner.scenario_runner import (
 )
 from auth_harness.services.dept_scope_list_probe import run_dept_scope_list_probe
 from auth_harness.services.dept_scope_probe import run_dept_scope_probe
+from auth_harness.services.example_order_export_probe import run_example_order_export_probe
 from auth_harness.services.impact import run_impact_suite
 from auth_harness.services.preflight import run_preflight
 from auth_harness.services.reconcile import reconcile_many, resolve_user_ids
@@ -241,6 +242,39 @@ def data_scope(ctx: click.Context, base_url: str | None, username: str | None) -
     if code != 0:
         raise SystemExit(code)
     raise SystemExit(run_dept_scope_list_probe(config, base_url=base_url, username=username))
+
+
+@cli.command("example-order-export")
+@click.option(
+    "--fixture",
+    "fixture_path",
+    type=click.Path(path_type=Path, exists=True),
+    default=None,
+    help="导出冒烟 fixture（默认 fixtures/example_order_export_cases.yml）",
+)
+@click.option(
+    "--base-url",
+    default=None,
+    help="网关根地址（默认 config urls.gateway 或 http://127.0.0.1:8080）",
+)
+@click.option("--user", "username", default=None, help="只测单个用户名")
+@click.pass_context
+def example_order_export(
+    ctx: click.Context,
+    fixture_path: Path | None,
+    base_url: str | None,
+    username: str | None,
+) -> None:
+    """提交 example_order 异步导出，轮询至 SUCCESS 并校验产物链接。"""
+    config = require_config(ctx)
+    raise SystemExit(
+        run_example_order_export_probe(
+            config,
+            fixture_path=fixture_path,
+            base_url=base_url,
+            username=username,
+        )
+    )
 
 
 @cli.command("list-scenarios")

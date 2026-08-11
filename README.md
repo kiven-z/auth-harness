@@ -82,6 +82,7 @@ make test          # 单元测试
 | `python -m auth_harness dept-scope` | 演示账号登录，断言 `/api/example/me` 的 `deptScope` |
 | `python -m auth_harness dept-scope-list` | 演示账号登录，断言 `/api/example/orders` 行级过滤 |
 | `python -m auth_harness data-scope` | 数据权限冒烟：`dept-scope` → `dept-scope-list` |
+| `python -m auth_harness example-order-export` | 提交 example_order 异步导出，轮询 SUCCESS 并校验下载链接 |
 | `python -m auth_harness list-scenarios` | 列出场景文件 |
 | `python -m auth_harness perms scan` | 扫描 `@auth.decide` 权限码 |
 | `python -m auth_harness perms check` | 对照 Release seed（或 `--db`）校验漂移 |
@@ -137,6 +138,19 @@ make dept-scope-list
 ```
 
 期望见 `fixtures/dept_scope_list_cases.yml`。
+
+### example_order 异步导出
+
+与数据权限探针分开：验证跨服务建任务（example → file）→ Worker 回调取数 → 产物可下载。
+
+前置同上（演示账号 + `example_order` 种子 + 网关 + `service-example`），且 **file 异步导出 Worker 已在跑**。
+
+```bash
+make example-order-export
+# 或：python -m auth_harness example-order-export --user north_chen
+```
+
+期望见 `fixtures/example_order_export_cases.yml`：`processedRows` 等于同账号 `/api/example/orders` 可见行数，且下载链接非空。
 
 ## 场景清单（23）
 

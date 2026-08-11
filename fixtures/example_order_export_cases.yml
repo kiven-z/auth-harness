@@ -1,0 +1,15 @@
+# example_order 异步导出基础冒烟
+# 依赖：Release 演示账号 + example_order 种子 + service-example + file Worker 已启动
+
+password: Admin@123456
+timeout_seconds: 90
+poll_interval_seconds: 2
+
+cases:
+  - username: Administrator
+    note: 超管 ALL → 导出行数应等于 /orders 可见行数
+    expect_min_rows: 1
+
+  - username: north_chen
+    note: 华北含子树 → 导出行数应等于列表可见行数（校验 scope 快照生效）
+    expect_min_rows: 1
