@@ -1,15 +1,21 @@
 name: user-dept-move
 description: 用户换部门后权限随新部门授权变化
+setup:
+  - ensure_user_dept:
+      user_id: 9001002004
+      dept_id: 9000100003
+      is_primary: true
+      status: 1
+      wait_outbox: true
 steps:
   - put_user_dept:
       user_id: 9001002004
-      relation_id: 9002002102
+      from_dept_id: 9000100003
       dept_id: 9000100002
       is_primary: true
       status: 1
   - wait_outbox:
       source_biz_id_contains: "update-dept:"
-
       timeout_sec: 60
   - assert:
       users:

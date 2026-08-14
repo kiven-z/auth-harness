@@ -39,7 +39,9 @@ def reconcile_many(
         for user_id in user_ids:
             diffs: list[str] = []
             for attempt in range(1, max_attempts + 1):
-                diffs = reconcile_user(config, conn, rds, api, user_id, oracle_mode)
+                diffs = reconcile_user(
+                    config, conn, rds, api, user_id, oracle_mode, require_redis=False
+                )
                 if not diffs:
                     print(f"[reconcile] OK userId={user_id}")
                     break

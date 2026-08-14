@@ -40,11 +40,22 @@ def load_oracle(
         return db_mod.query_db_oracle(conn, user_id)
 
 
-def compare_profiles(oracle: dict[str, Any], redis_profile: dict[str, Any] | None) -> list[str]:
-    """返回差异列表，空表示一致。"""
+def compare_profiles(
+    oracle: dict[str, Any],
+    redis_profile: dict[str, Any] | None,
+    *,
+    require_redis: bool = True,
+) -> list[str]:
+    """返回差异列表，空表示一致。
+
+    `require_redis=False`：无画像视为尚未加载（CLI reconcile / seed 后）。
+    场景 assert 必须 `require_redis=True`，否则 outbox 没刷 Redis 也会绿。
+    """
     diffs: list[str] = []
     if redis_profile is None:
-        return [f"userId={oracle.get('userId')}: Redis 无画像"]
+        if require_redis:
+            return [f"userId={oracle.get('userId')}: Redis 无画像"]
+        return []
 
     redis_norm = redis_mod.normalize_profile(redis_profile)
     for field in ("roles", "permissions"):
@@ -74,8 +85,10 @@ def reconcile_user(
     api: ApiClient,
     user_id: int,
     mode: str = OracleMode.API,
+    *,
+    require_redis: bool = True,
 ) -> list[str]:
     """对比单个用户的 DB oracle 与 Redis 画像。"""
     oracle = load_oracle(config, conn, api, user_id, mode)
     redis_raw = redis_mod.load_profile(rds, user_id)
-    return compare_profiles(oracle, redis_raw)
+    return compare_profiles(oracle, redis_raw, require_redis=require_redis)

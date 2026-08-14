@@ -90,7 +90,9 @@ def wait_outbox_success(
 
     hint = (
         " 提示：确认上一步 API 已实际变更（如 dept move 父级未变则为 no-op）；"
-        "过滤须与后端 operation 前缀一致（批量删部门是 delete-dept: 不是 clear-dept:）；"
+        "过滤须与后端 operation 前缀一致"
+        "（DELETE /{userId} 是 delete-dept: / delete-post:，"
+        "DELETE /{userId}/all 才是 clear-dept: / clear-post:）；"
         "或先 make seed 重置 harness 数据。"
     )
     detail = f" last={last_row}" if last_row else ""

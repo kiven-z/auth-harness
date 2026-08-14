@@ -30,6 +30,10 @@ class CompareProfilesTest(unittest.TestCase):
         self.assertEqual(len(diffs), 1)
         self.assertIn("Redis 无画像", diffs[0])
 
+    def test_missing_redis_skipped_when_not_required(self) -> None:
+        oracle = {"userId": 42, "roles": ["R_A"], "permissions": []}
+        self.assertEqual(compare_profiles(oracle, None, require_redis=False), [])
+
     def test_perm_version_mismatch(self) -> None:
         oracle = {"userId": 1, "roles": [], "permissions": [], "permVersion": 3}
         redis_profile = {"userId": 1, "roles": [], "permissions": [], "permVersion": 2}
@@ -140,6 +144,44 @@ class OutboxOpsTest(unittest.TestCase):
                         if value is not None and value not in KNOWN_PREFIXES:
                             unknown.append(f"{path.name}: {key}={value!r}")
         self.assertEqual(unknown, [])
+
+    def test_scenario_yaml_has_no_prepare_outbox_wait(self) -> None:
+        leftover: list[str] = []
+        for path in sorted(SCENARIOS_DIR.glob("*.yml")):
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for block_name in ("setup", "steps"):
+                for step in data.get(block_name) or []:
+                    if isinstance(step, dict) and "prepare_outbox_wait" in step:
+                        leftover.append(path.name)
+        self.assertEqual(leftover, [])
+
+
+class FlushHarnessProfilesTest(unittest.TestCase):
+    """seed 只清 9001* 画像。"""
+
+    def test_deletes_matching_keys(self) -> None:
+        from auth_harness.infrastructure.redis_client import (
+            HARNESS_PERM_KEY_PATTERN,
+            delete_harness_profiles,
+        )
+
+        client = MagicMock()
+        client.scan_iter.return_value = [
+            "auth:security:user:perm:9001000171",
+            "auth:security:user:perm:9001002001",
+        ]
+        client.delete.return_value = 2
+        self.assertEqual(delete_harness_profiles(client), 2)
+        client.scan_iter.assert_called_once_with(match=HARNESS_PERM_KEY_PATTERN, count=500)
+        client.delete.assert_called_once()
+
+    def test_noop_when_empty(self) -> None:
+        from auth_harness.infrastructure.redis_client import delete_harness_profiles
+
+        client = MagicMock()
+        client.scan_iter.return_value = []
+        self.assertEqual(delete_harness_profiles(client), 0)
+        client.delete.assert_not_called()
 
 
 if __name__ == "__main__":

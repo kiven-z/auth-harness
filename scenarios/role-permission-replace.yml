@@ -6,7 +6,6 @@ steps:
       permission_ids: [9000300001]
   - wait_outbox:
       source_biz_id_contains: "assign-permissions:"
-
       timeout_sec: 60
   - assert:
       users:
@@ -17,3 +16,9 @@ steps:
         dept_id: 9000100002
         sample_size: 3
         permissions_contain: [harness:user:read]
+  - post_role_permissions:
+      role_id: 9000200004
+      permission_ids: [9000300004]
+  - wait_outbox:
+      source_biz_id_contains: "assign-permissions:"
+      timeout_sec: 60

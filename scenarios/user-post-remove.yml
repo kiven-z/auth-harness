@@ -1,12 +1,18 @@
 name: user-post-remove
 description: 用户离开岗位后失去岗位授权角色
+setup:
+  - ensure_user_post:
+      user_id: 9001002003
+      post_id: 9000600001
+      is_primary: true
+      status: 1
+      wait_outbox: true
 steps:
   - delete_user_post:
       user_id: 9001002003
-      relation_ids: [9002003001]
+      post_id: 9000600001
   - wait_outbox:
       source_biz_id_contains: "delete-post:"
-
       timeout_sec: 60
   - assert:
       users:

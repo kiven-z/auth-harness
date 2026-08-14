@@ -7,30 +7,22 @@ setup:
       is_primary: true
       status: 1
       wait_outbox: true
-  - prepare_outbox_wait:
-      source_biz_id_contains: "replace-roles:"
-
   - put_post_roles:
       post_id: 9000600001
       role_ids: [9000200002, 9000200003]
   - wait_outbox:
       source_biz_id_contains: "replace-roles:"
-
       timeout_sec: 60
   - verify_subject_roles:
       subject_type: POST
       subject_id: 9000600001
       role_codes: [R_DEPT_MGR, R_POST_OP]
 steps:
-  - prepare_outbox_wait:
-      source_biz_id_contains: "replace-roles:"
-
   - put_post_roles:
       post_id: 9000600001
       role_ids: [9000200003]
   - wait_outbox:
       source_biz_id_contains: "replace-roles:"
-
       timeout_sec: 60
   - verify_subject_roles:
       subject_type: POST

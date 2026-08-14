@@ -15,6 +15,7 @@ from auth_harness.domain.paths import (
     SCENARIOS_DIR,
 )
 from auth_harness.infrastructure import db as db_mod
+from auth_harness.infrastructure import redis_client as redis_mod
 from auth_harness.perms import service as perms_service
 from auth_harness.runner.scenario_runner import (
     run_integration,
@@ -61,18 +62,20 @@ def require_config(ctx: click.Context) -> HarnessConfig:
 @cli.command()
 @click.pass_context
 def seed(ctx: click.Context) -> None:
-    """按顺序执行 sql/ 下 seed 脚本。"""
+    """按顺序执行 sql/ 下 seed 脚本，并清掉 9001* Redis 画像。"""
     config = require_config(ctx)
     db_mod.run_seed(config)
+    redis_mod.flush_harness_profiles(config)
     click.echo("[seed] 完成")
 
 
 @cli.command("cleanup")
 @click.pass_context
 def cleanup_cmd(ctx: click.Context) -> None:
-    """执行 cleanup.sql 清理测试数据。"""
+    """执行 cleanup.sql 清理测试数据，并清掉 9001* Redis 画像。"""
     config = require_config(ctx)
     db_mod.run_cleanup(config)
+    redis_mod.flush_harness_profiles(config)
     click.echo("[cleanup] 完成")
 
 

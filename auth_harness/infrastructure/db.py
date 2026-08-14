@@ -237,6 +237,54 @@ def query_subject_role_codes(
     return [str(row["role_code"]) for row in rows]
 
 
+def find_user_dept_id(
+    conn: pymysql.connections.Connection, user_id: int, dept_id: int
+) -> int | None:
+    """查找用户-部门关联主键。"""
+    row = fetch_one(
+        conn,
+        """
+        SELECT id FROM user_dept
+        WHERE user_id = %s AND dept_id = %s AND status IN (1, 2)
+        LIMIT 1
+        """,
+        (user_id, dept_id),
+    )
+    return int(row["id"]) if row else None
+
+
+def find_any_user_dept(
+    conn: pymysql.connections.Connection, user_id: int
+) -> dict[str, Any] | None:
+    """查找用户任意一条有效部门关联（主部门优先）。"""
+    return fetch_one(
+        conn,
+        """
+        SELECT id, dept_id FROM user_dept
+        WHERE user_id = %s AND status IN (1, 2)
+        ORDER BY is_primary DESC, id ASC
+        LIMIT 1
+        """,
+        (user_id,),
+    )
+
+
+def find_user_post_id(
+    conn: pymysql.connections.Connection, user_id: int, post_id: int
+) -> int | None:
+    """查找用户-岗位关联主键。"""
+    row = fetch_one(
+        conn,
+        """
+        SELECT id FROM user_post
+        WHERE user_id = %s AND post_id = %s AND status IN (1, 2)
+        LIMIT 1
+        """,
+        (user_id, post_id),
+    )
+    return int(row["id"]) if row else None
+
+
 def fetch_perm_version(conn: pymysql.connections.Connection, user_id: int) -> int | None:
     """读取用户 perm_version。"""
     row = fetch_one(conn, "SELECT perm_version FROM sys_user WHERE id = %s", (user_id,))
@@ -259,7 +307,7 @@ def fetch_outbox_after_id(
     min_id: int,
     source_biz_id_contains: str | None,
 ) -> dict[str, Any] | None:
-    """获取 id 大于游标的最新 outbox 行。"""
+    """获取 id 大于游标的最早一条匹配 outbox。"""
     if source_biz_id_contains:
         return fetch_one(
             conn,
@@ -267,10 +315,10 @@ def fetch_outbox_after_id(
             SELECT id, event_id, status, source_biz_id, last_error, processed_at, created_at
             FROM sys_authorization_invalidation_outbox
             WHERE id > %s AND source_biz_id LIKE %s
-            ORDER BY id DESC
+            ORDER BY id ASC
             LIMIT 1
             """,
-            (min_id, f"%{source_biz_id_contains}%"),
+            (min_id, f"{source_biz_id_contains}%"),
         )
     return fetch_one(
         conn,
@@ -278,7 +326,7 @@ def fetch_outbox_after_id(
         SELECT id, event_id, status, source_biz_id, last_error, processed_at, created_at
         FROM sys_authorization_invalidation_outbox
         WHERE id > %s
-        ORDER BY id DESC
+        ORDER BY id ASC
         LIMIT 1
         """,
         (min_id,),

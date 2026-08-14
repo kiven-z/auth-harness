@@ -1,12 +1,18 @@
 name: user-dept-remove
 description: 用户移出部门后失去部门授权角色
+setup:
+  - ensure_user_dept:
+      user_id: 9001002002
+      dept_id: 9000100003
+      is_primary: true
+      status: 1
+      wait_outbox: true
 steps:
   - delete_user_dept:
       user_id: 9001002002
-      relation_ids: [9002002101]
+      dept_id: 9000100003
   - wait_outbox:
       source_biz_id_contains: "delete-dept:"
-
       timeout_sec: 60
   - assert:
       users:

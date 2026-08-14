@@ -1,5 +1,10 @@
 name: user-post-assign
 description: 用户加入岗位后继承岗位授权角色
+setup:
+  - delete_user_post:
+      user_id: 9001002002
+      post_id: 9000600001
+      wait_outbox: true
 steps:
   - post_user_post:
       user_id: 9001002002
@@ -8,7 +13,6 @@ steps:
       status: 1
   - wait_outbox:
       source_biz_id_contains: "create-post:"
-
       timeout_sec: 60
   - assert:
       users:

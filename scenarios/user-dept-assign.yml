@@ -1,5 +1,10 @@
 name: user-dept-assign
 description: 用户加入部门后继承部门授权角色
+setup:
+  - delete_user_dept:
+      user_id: 9001002001
+      dept_id: 9000100002
+      wait_outbox: true
 steps:
   - post_user_dept:
       user_id: 9001002001
@@ -8,7 +13,6 @@ steps:
       status: 1
   - wait_outbox:
       source_biz_id_contains: "create-dept:"
-
       timeout_sec: 60
   - assert:
       users:

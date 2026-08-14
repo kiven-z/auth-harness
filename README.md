@@ -57,8 +57,8 @@ cp config.example.yml config.yml   # 填写 MySQL / Redis / admin / JWT
 # 管理账号：Administrator / Admin@123456
 
 make install
-make seed          # 只灌/刷新 9000 前缀 harness 数据（先 cleanup，不碰 Release 1~14）
-make cleanup       # 仅清理 9000 前缀
+make seed          # 灌 9000 前缀 MySQL + 清 Redis `auth:security:user:perm:9001*`
+make cleanup       # 仅清理 9000 前缀（SQL + Redis 画像）
 make preflight
 make p0            # P0 闭环 8 场景
 make integration   # 全量 21 场景 + 3 负向
@@ -70,14 +70,14 @@ make test          # 单元测试
 
 | 命令 | 说明 |
 | ------ | ------ |
-| `make cleanup` / `python -m auth_harness cleanup` | 清理 9000 前缀测试数据（`sql/cleanup.sql`） |
-| `python -m auth_harness seed` | 执行 sql/ 种子（会先跑 cleanup.sql） |
+| `make cleanup` / `python -m auth_harness cleanup` | 清理 9000 前缀测试数据（SQL + Redis 画像） |
+| `python -m auth_harness seed` | 执行 sql/ 种子（先 cleanup）并删除 `9001*` Redis 画像 |
 | `python -m auth_harness run <scenario.yml>` | 单场景 |
 | `python -m auth_harness smoke` | 授权失效快速 3 场景（与数据权限无关） |
 | `python -m auth_harness p0` | P0 套件（8 场景） |
 | `python -m auth_harness integration` | 21 L2 + 3 负向 |
 | `python -m auth_harness impact` | L1 影响面 fixture |
-| `python -m auth_harness reconcile` | 批量对账 |
+| `python -m auth_harness reconcile` | 批量对账（无 Redis 画像视为尚未加载，跳过；有画像则必须与 DB 一致） |
 | `python -m auth_harness preflight` | 连通性检查 |
 | `python -m auth_harness dept-scope` | 演示账号登录，断言 `/api/example/me` 的 `deptScope` |
 | `python -m auth_harness dept-scope-list` | 演示账号登录，断言 `/api/example/orders` 行级过滤 |
@@ -182,9 +182,10 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 | ------ | ------ |
 | `put_dept_roles` / `put_user_roles` / `put_post_roles` | grant_table 全量覆盖 |
 | `post_role_permissions` | 角色权限全量分配 |
-| `post_user_dept` / `put_user_dept` / `delete_user_dept` | 用户部门 |
-| `post_user_post` / `delete_user_post` | 用户岗位 |
-| `ensure_user_post` | 幂等恢复岗位成员（`wait_outbox: true` 时仅新建关联才等待） |
+| `post_user_dept` / `put_user_dept` / `delete_user_dept` | 用户部门（删可按 `dept_id` 查找；无关联则跳过） |
+| `post_user_post` / `delete_user_post` | 用户岗位（删可按 `post_id` 查找） |
+| `ensure_user_dept` / `ensure_user_post` | 幂等恢复成员（`wait_outbox: true` 时仅实际写入才等待） |
+| `ensure_dept_parent` | 幂等恢复部门父节点 |
 | `update_dept_meta` / `move_dept` | 部门元数据 / 移动 |
 | `update_role_meta` / `update_permission_meta` / `update_post_meta` | 元数据更新 |
 | `wait_outbox` | 等待 outbox SUCCESS |
@@ -200,15 +201,17 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 | 部门/岗位/用户 grant 全量覆盖 | `replace-roles:` |
 | 角色权限分配 | `assign-permissions:` |
 | 用户部门增/改/批删 | `create-dept:` / `update-dept:` / `delete-dept:` |
-| 用户部门清空全部 | `clear-dept:`（`DELETE /{userId}/all`） |
+| 用户部门清空全部 | `clear-dept:`（仅 `DELETE /{userId}/all`；批删是 `delete-dept:`） |
 | 用户岗位增/批删 | `create-post:` / `delete-post:` |
-| 用户岗位清空全部 | `clear-post:`（`DELETE /{userId}/all`） |
+| 用户岗位清空全部 | `clear-post:`（仅 `DELETE /{userId}/all`；批删是 `delete-post:`） |
 | 部门移动 | `move:` |
 | 角色/权限元数据更新 | `update:` |
 
 负向场景（`assert_no_outbox`）不设过滤，按全局游标判定。
 
-**游标规则**：`prepare_outbox_wait` / `wait_outbox` 的游标一律取 outbox 表**全局** `max(id)`；`source_biz_id_contains` 只用于等待时筛选行，不能用于游标快照（否则会把游标卡在旧 `move:` 行上导致空转）。
+**游标规则**：每个 step 入口快照全局 `max(id)`；`wait_outbox` 用**上一步**的入口游标。YAML 写成「变更 API → `wait_outbox`」，不要再插 `prepare_outbox_wait`。`source_biz_id_contains` 只筛选行（`operation:` 前缀匹配），不参与游标。
+
+`make seed` 只写 MySQL，会顺带删掉 9001* Redis 画像，避免上一轮测试残留导致 `make reconcile` 误报。seed 之后无画像不算不一致；场景 assert 仍要求 outbox 刷出画像。
 
 ## 剩余缺口
 

@@ -1,8 +1,17 @@
 name: dept-parent-change
 description: 子部门变更父节点后成员权限随部门树变化（结束时移回）
+setup:
+  - ensure_dept_parent:
+      dept_id: 9000100003
+      parent_id: 9000100001
+      wait_outbox: true
+  - ensure_user_dept:
+      user_id: 9001002002
+      dept_id: 9000100003
+      is_primary: true
+      status: 1
+      wait_outbox: true
 steps:
-  - prepare_outbox_wait:
-      source_biz_id_contains: "move:"
   - move_dept:
       dept_id: 9000100003
       parent_id: 9000100002
@@ -13,8 +22,6 @@ steps:
       users:
         - user_id: 9001002002
           roles_contain: [R_SHARED]
-  - prepare_outbox_wait:
-      source_biz_id_contains: "move:"
   - move_dept:
       dept_id: 9000100003
       parent_id: 9000100001

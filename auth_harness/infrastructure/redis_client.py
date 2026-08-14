@@ -10,6 +10,7 @@ import redis
 from auth_harness.config import HarnessConfig
 
 PERM_KEY_PREFIX = "auth:security:user:perm:"
+HARNESS_PERM_KEY_PATTERN = f"{PERM_KEY_PREFIX}9001*"
 
 
 def connect(config: HarnessConfig) -> redis.Redis:
@@ -22,6 +23,25 @@ def connect(config: HarnessConfig) -> redis.Redis:
         password=rconf.get("password") or None,
         decode_responses=True,
     )
+
+
+def delete_harness_profiles(client: redis.Redis) -> int:
+    """删除 9001* harness 用户的 Redis 画像（SQL seed 不会刷新缓存）。"""
+    keys = list(client.scan_iter(match=HARNESS_PERM_KEY_PATTERN, count=500))
+    if not keys:
+        return 0
+    return int(client.delete(*keys))
+
+
+def flush_harness_profiles(config: HarnessConfig) -> int:
+    """连接 Redis 并清理 harness 画像，返回删除 key 数。"""
+    client = connect(config)
+    try:
+        deleted = delete_harness_profiles(client)
+        print(f"[redis] 已删除 harness 画像 {deleted} 个 ({HARNESS_PERM_KEY_PATTERN})")
+        return deleted
+    finally:
+        client.close()
 
 
 def load_profile(client: redis.Redis, user_id: int) -> dict[str, Any] | None:
