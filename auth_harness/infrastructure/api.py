@@ -4,16 +4,23 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import Callable
 from typing import Any
 
 import jwt
 import requests
 
 from auth_harness.config import HarnessConfig
+from auth_harness.infrastructure import system_paths as paths
 
 SUCCESS_CODE = 0
 INTERNAL_HEADER = "X-Internal-JWT"
 INTERNAL_MAX_TTL_SECONDS = 60
+
+_DEPT_META_KEYS = ("parentId", "deptName", "deptCode", "status", "orderNum", "remark")
+_ROLE_META_KEYS = ("roleCode", "roleName", "status", "orderNum", "remark")
+_PERMISSION_META_KEYS = ("permissionCode", "permissionName", "status", "orderNum", "remark")
+_POST_META_KEYS = ("deptId", "postCode", "postName", "status", "orderNum", "remark")
 
 
 class ApiClient:
@@ -58,27 +65,19 @@ class ApiClient:
 
     def put_dept_roles(self, dept_id: int, role_ids: list[int]) -> None:
         """部门角色全量覆盖。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}/roles"
-        self._put_json(url, {"roleIds": role_ids})
+        self._authorized_put(paths.dept_roles(dept_id), {"roleIds": role_ids})
 
     def put_user_roles(self, user_id: int, role_ids: list[int]) -> None:
         """用户直连角色全量覆盖。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user-role/{user_id}"
-        self._put_json(url, {"roleIds": role_ids})
+        self._authorized_put(paths.user_roles(user_id), {"roleIds": role_ids})
 
     def put_post_roles(self, post_id: int, role_ids: list[int]) -> None:
         """岗位角色全量覆盖。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/post/{post_id}/roles"
-        self._put_json(url, {"roleIds": role_ids})
+        self._authorized_put(paths.post_roles(post_id), {"roleIds": role_ids})
 
     def post_role_permissions(self, role_id: int, permission_ids: list[int]) -> None:
         """角色权限全量分配。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/role/{role_id}/permissions"
-        self._post_json(url, {"permissionIds": permission_ids})
+        self._authorized_post(paths.role_permissions(role_id), {"permissionIds": permission_ids})
 
     def post_user_dept(
         self,
@@ -90,8 +89,6 @@ class ApiClient:
         remark: str | None = None,
     ) -> None:
         """新增用户部门关联。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user-dept/{user_id}"
         payload: dict[str, Any] = {
             "deptId": dept_id,
             "status": status,
@@ -99,7 +96,7 @@ class ApiClient:
         }
         if remark is not None:
             payload["remark"] = remark
-        self._post_json(url, payload)
+        self._authorized_post(paths.user_dept_collection(user_id), payload)
 
     def put_user_dept(
         self,
@@ -112,8 +109,6 @@ class ApiClient:
         remark: str | None = None,
     ) -> None:
         """更新用户部门关联。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user-dept/{user_id}/{relation_id}"
         payload: dict[str, Any] = {
             "deptId": dept_id,
             "status": status,
@@ -121,13 +116,11 @@ class ApiClient:
         }
         if remark is not None:
             payload["remark"] = remark
-        self._put_json(url, payload)
+        self._authorized_put(paths.user_dept_item(user_id, relation_id), payload)
 
     def delete_user_depts(self, user_id: int, relation_ids: list[int]) -> None:
         """批量删除用户部门关联。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user-dept/{user_id}"
-        self._delete_json(url, relation_ids)
+        self._authorized_delete(paths.user_dept_collection(user_id), relation_ids)
 
     def post_user_post(
         self,
@@ -139,8 +132,6 @@ class ApiClient:
         remark: str | None = None,
     ) -> None:
         """新增用户岗位关联。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user-post/{user_id}"
         payload: dict[str, Any] = {
             "postId": post_id,
             "status": status,
@@ -148,117 +139,73 @@ class ApiClient:
         }
         if remark is not None:
             payload["remark"] = remark
-        self._post_json(url, payload)
+        self._authorized_post(paths.user_post_collection(user_id), payload)
 
     def delete_user_posts(self, user_id: int, relation_ids: list[int]) -> None:
         """批量删除用户岗位关联。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user-post/{user_id}"
-        self._delete_json(url, relation_ids)
+        self._authorized_delete(paths.user_post_collection(user_id), relation_ids)
 
     def update_dept_meta(self, dept_id: int, **changes: Any) -> None:
         """更新部门元数据（名称/父级/状态等）。"""
-        detail = self.get_dept_detail(dept_id)
-        payload = {
-            "id": dept_id,
-            "parentId": detail["parentId"],
-            "deptName": detail["deptName"],
-            "deptCode": detail["deptCode"],
-            "status": detail["status"],
-            "orderNum": detail.get("orderNum"),
-            "remark": detail.get("remark"),
-        }
-        payload.update(changes)
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/dept"
-        self._put_json(url, payload)
+        self._update_meta(paths.DEPT, dept_id, self.get_dept_detail, _DEPT_META_KEYS, changes)
 
     def move_dept(self, dept_id: int, parent_id: int) -> None:
         """移动部门到新的父部门。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}/move"
-        self._put_json(url, {"parentId": parent_id})
+        detail = self.get_dept_detail(dept_id)
+        current_parent = int(detail.get("parentId") or 0)
+        if current_parent == parent_id:
+            raise RuntimeError(
+                f"部门 {dept_id} 父级已是 {parent_id}，服务端 move 为 no-op，不会写入 outbox；"
+                f"请先 make seed 重置 harness 部门树"
+            )
+        self._authorized_put(paths.dept_move(), {"id": dept_id, "parentId": parent_id})
+        updated = self.get_dept_detail(dept_id)
+        if int(updated.get("parentId") or 0) != parent_id:
+            raise RuntimeError(
+                f"部门 {dept_id} 移动后 parent={updated.get('parentId')}，期望 {parent_id}"
+            )
 
     def update_role_meta(self, role_id: int, **changes: Any) -> None:
         """更新角色元数据（编码/名称/状态等）。"""
-        detail = self.get_role_detail(role_id)
-        payload = {
-            "id": role_id,
-            "roleCode": detail["roleCode"],
-            "roleName": detail["roleName"],
-            "status": detail["status"],
-            "orderNum": detail.get("orderNum"),
-            "remark": detail.get("remark"),
-        }
-        payload.update(changes)
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/role"
-        self._put_json(url, payload)
+        self._update_meta(paths.ROLE, role_id, self.get_role_detail, _ROLE_META_KEYS, changes)
 
     def update_permission_meta(self, permission_id: int, **changes: Any) -> None:
         """更新权限元数据（编码/名称/状态等）。"""
-        detail = self.get_permission_detail(permission_id)
-        payload = {
-            "id": permission_id,
-            "permissionCode": detail["permissionCode"],
-            "permissionName": detail["permissionName"],
-            "status": detail["status"],
-            "orderNum": detail.get("orderNum"),
-            "remark": detail.get("remark"),
-        }
-        payload.update(changes)
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/permission"
-        self._put_json(url, payload)
+        self._update_meta(
+            paths.PERMISSION,
+            permission_id,
+            self.get_permission_detail,
+            _PERMISSION_META_KEYS,
+            changes,
+        )
 
     def update_post_meta(self, post_id: int, **changes: Any) -> None:
         """更新岗位元数据（名称/排序/状态等）。"""
-        detail = self.get_post_detail(post_id)
-        payload = {
-            "id": post_id,
-            "deptId": detail["deptId"],
-            "postCode": detail["postCode"],
-            "postName": detail["postName"],
-            "status": detail["status"],
-            "orderNum": detail.get("orderNum"),
-            "remark": detail.get("remark"),
-        }
-        payload.update(changes)
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/post"
-        self._put_json(url, payload)
+        self._update_meta(paths.POST, post_id, self.get_post_detail, _POST_META_KEYS, changes)
 
     def batch_update_user_status(self, user_ids: list[int], status: int) -> None:
         """批量更新用户状态。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user/status"
-        self._put_json(url, {"ids": user_ids, "status": status})
+        self._authorized_put(paths.user_status_batch(), {"ids": user_ids, "status": status})
 
     def delete_users(self, user_ids: list[int]) -> None:
         """批量逻辑删除用户。"""
-        self.ensure_login()
-        url = f"{self.config.system_base_url}/api/system/user"
-        self._delete_json(url, user_ids)
+        self._authorized_delete(paths.USER, user_ids)
 
     def get_dept_detail(self, dept_id: int) -> dict[str, Any]:
         """部门详情。"""
-        url = f"{self.config.system_base_url}/api/system/dept/{dept_id}"
-        return self._get_data(url)
+        return self._get_data(paths.dept_detail(dept_id))
 
     def get_role_detail(self, role_id: int) -> dict[str, Any]:
         """角色详情。"""
-        url = f"{self.config.system_base_url}/api/system/role/{role_id}"
-        return self._get_data(url)
+        return self._get_data(paths.role_detail(role_id))
 
     def get_permission_detail(self, permission_id: int) -> dict[str, Any]:
         """权限详情。"""
-        url = f"{self.config.system_base_url}/api/system/permission/{permission_id}"
-        return self._get_data(url)
+        return self._get_data(paths.permission_detail(permission_id))
 
     def get_post_detail(self, post_id: int) -> dict[str, Any]:
         """岗位详情。"""
-        url = f"{self.config.system_base_url}/api/system/post/{post_id}"
-        return self._get_data(url)
+        return self._get_data(paths.post_detail(post_id))
 
     def get_effective_codes(self, user_id: int) -> dict[str, Any]:
         """调用内部 effective-codes（需 X-Internal-JWT）。"""
@@ -279,16 +226,46 @@ class ApiClient:
             "permissions": sorted(data.get("permissionCodes") or []),
         }
 
-    def _get_data(self, url: str) -> dict[str, Any]:
+    def _system(self, path: str) -> str:
+        return f"{self.config.system_base_url}{path}"
+
+    def _authorized_put(self, path: str, payload: dict[str, Any]) -> None:
         self.ensure_login()
-        response = self.session.get(url, timeout=30)
+        self._put_json(self._system(path), payload)
+
+    def _authorized_post(self, path: str, payload: dict[str, Any]) -> None:
+        self.ensure_login()
+        self._post_json(self._system(path), payload)
+
+    def _authorized_delete(self, path: str, payload: list[Any]) -> None:
+        self.ensure_login()
+        self._delete_json(self._system(path), payload)
+
+    def _update_meta(
+        self,
+        resource_path: str,
+        entity_id: int,
+        detail_loader: Callable[[int], dict[str, Any]],
+        field_keys: tuple[str, ...],
+        changes: dict[str, Any],
+    ) -> None:
+        detail = detail_loader(entity_id)
+        payload: dict[str, Any] = {"id": entity_id}
+        for key in field_keys:
+            payload[key] = detail.get(key)
+        payload.update(changes)
+        self._authorized_put(resource_path, payload)
+
+    def _get_data(self, path: str) -> dict[str, Any]:
+        self.ensure_login()
+        response = self.session.get(self._system(path), timeout=30)
         response.raise_for_status()
         body = response.json()
         if body.get("code") != SUCCESS_CODE:
-            raise RuntimeError(f"GET {url} 失败: {body}")
+            raise RuntimeError(f"GET {path} 失败: {body}")
         data = body.get("data")
         if not isinstance(data, dict):
-            raise RuntimeError(f"GET {url} 返回非对象: {body}")
+            raise RuntimeError(f"GET {path} 返回非对象: {body}")
         return data
 
     def _put_json(self, url: str, payload: dict[str, Any]) -> None:

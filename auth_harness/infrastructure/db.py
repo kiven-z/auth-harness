@@ -245,26 +245,12 @@ def fetch_perm_version(conn: pymysql.connections.Connection, user_id: int) -> in
     return int(row["perm_version"] or 0)
 
 
-def fetch_max_outbox_id(
-    conn: pymysql.connections.Connection,
-    source_biz_id_contains: str | None,
-) -> int:
-    """读取匹配条件下当前最大 outbox id，用于等待游标。"""
-    if source_biz_id_contains:
-        row = fetch_one(
-            conn,
-            """
-            SELECT COALESCE(MAX(id), 0) AS max_id
-            FROM sys_authorization_invalidation_outbox
-            WHERE source_biz_id LIKE %s
-            """,
-            (f"%{source_biz_id_contains}%",),
-        )
-    else:
-        row = fetch_one(
-            conn,
-            "SELECT COALESCE(MAX(id), 0) AS max_id FROM sys_authorization_invalidation_outbox",
-        )
+def fetch_max_outbox_id(conn: pymysql.connections.Connection) -> int:
+    """读取 outbox 表当前全局最大 id，用于等待游标。"""
+    row = fetch_one(
+        conn,
+        "SELECT COALESCE(MAX(id), 0) AS max_id FROM sys_authorization_invalidation_outbox",
+    )
     return int(row["max_id"]) if row else 0
 
 

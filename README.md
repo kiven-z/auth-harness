@@ -26,7 +26,7 @@ auth-harness/
     domain/
       oracle.py, paths.py, impact.py
     infrastructure/
-      api.py, db.py, redis_client.py
+      api.py, system_paths.py, db.py, redis_client.py
     steps/ handlers.py, registry.py, context.py
     assertions/ runner.py, user_codes.py, event.py
     wait/ outbox.py
@@ -41,7 +41,7 @@ auth-harness/
 ## 固定测试 ID（9000 前缀）
 
 | 实体 | ID / 编码 |
-|------|-----------|
+| ------ | ----------- |
 | D_FANOUT / D_EDGE / D_CHILD | `9000100001` / `9000100002` / `9000100003` |
 | P_FANOUT / P_EDGE | `9000600001` / `9000600002` |
 | 扇出用户 | `9001000001` … `9001002000` |
@@ -69,7 +69,7 @@ make test          # 单元测试
 ## CLI 命令
 
 | 命令 | 说明 |
-|------|------|
+| ------ | ------ |
 | `make cleanup` / `python -m auth_harness cleanup` | 清理 9000 前缀测试数据（`sql/cleanup.sql`） |
 | `python -m auth_harness seed` | 执行 sql/ 种子（会先跑 cleanup.sql） |
 | `python -m auth_harness run <scenario.yml>` | 单场景 |
@@ -157,7 +157,7 @@ make example-order-export
 ### P0（8）
 
 | 文件 | 验证点 |
-|------|--------|
+| ------ | -------- |
 | grant-dept-assign / remove | 部门角色扇出 |
 | grant-user-assign / clear | 用户直连角色 |
 | grant-dept-replace | 部门角色全量替换 |
@@ -179,7 +179,7 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 ## 步骤类型（节选）
 
 | 步骤 | 说明 |
-|------|------|
+| ------ | ------ |
 | `put_dept_roles` / `put_user_roles` / `put_post_roles` | grant_table 全量覆盖 |
 | `post_role_permissions` | 角色权限全量分配 |
 | `post_user_dept` / `put_user_dept` / `delete_user_dept` | 用户部门 |
@@ -196,15 +196,19 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 后端现格式为 `operation:xxxxxxxx`（8 位短 UUID），**不再嵌入业务 ID**。场景里用操作前缀匹配，例如：
 
 | 操作 | `source_biz_id_contains` |
-|------|--------------------------|
+| ------ | -------------------------- |
 | 部门/岗位/用户 grant 全量覆盖 | `replace-roles:` |
 | 角色权限分配 | `assign-permissions:` |
-| 用户部门增/改/清 | `create-dept:` / `update-dept:` / `clear-dept:` |
-| 用户岗位增/清 | `create-post:` / `clear-post:` |
+| 用户部门增/改/批删 | `create-dept:` / `update-dept:` / `delete-dept:` |
+| 用户部门清空全部 | `clear-dept:`（`DELETE /{userId}/all`） |
+| 用户岗位增/批删 | `create-post:` / `delete-post:` |
+| 用户岗位清空全部 | `clear-post:`（`DELETE /{userId}/all`） |
 | 部门移动 | `move:` |
 | 角色/权限元数据更新 | `update:` |
 
 负向场景（`assert_no_outbox`）不设过滤，按全局游标判定。
+
+**游标规则**：`prepare_outbox_wait` / `wait_outbox` 的游标一律取 outbox 表**全局** `max(id)`；`source_biz_id_contains` 只用于等待时筛选行，不能用于游标快照（否则会把游标卡在旧 `move:` 行上导致空转）。
 
 ## 剩余缺口
 

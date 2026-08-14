@@ -6,6 +6,7 @@ import time
 from typing import Any
 
 from auth_harness.domain.oracle import OracleMode, reconcile_user
+from auth_harness.domain.outbox_ops import CREATE_POST, require_known_prefix
 from auth_harness.infrastructure import db as db_mod
 from auth_harness.steps.context import StepContext
 from auth_harness.steps.registry import DEFAULT_REGISTRY
@@ -140,9 +141,7 @@ def ensure_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
         wait_outbox_step(
             ctx,
             {
-                "source_biz_id_contains": params.get(
-                    "outbox_source_contains", f"create-post:{user_id}"
-                ),
+                "source_biz_id_contains": params.get("outbox_source_contains", CREATE_POST),
                 "timeout_sec": params.get("timeout_sec", 60),
             },
         )
@@ -222,10 +221,10 @@ def delete_users(ctx: StepContext, params: dict[str, Any]) -> None:
 @register("wait_outbox")
 def wait_outbox_step(ctx: StepContext, params: dict[str, Any]) -> None:
     """轮询 outbox 直至 SUCCESS。"""
-    source_contains = params.get("source_biz_id_contains")
+    source_contains = require_known_prefix(params.get("source_biz_id_contains"))
     cursor = ctx.resolve_outbox_cursor(source_contains)
     if cursor is None:
-        cursor = snapshot_outbox_cursor(ctx.conn, source_contains)
+        cursor = snapshot_outbox_cursor(ctx.conn)
     row = wait_outbox_success(
         ctx.conn,
         ctx.config,
@@ -239,12 +238,12 @@ def wait_outbox_step(ctx: StepContext, params: dict[str, Any]) -> None:
 @register("assert_no_outbox")
 def assert_no_outbox(ctx: StepContext, params: dict[str, Any]) -> None:
     """断言指定时间窗内未产生新 outbox 行（负向用例）。"""
-    source_contains = params.get("source_biz_id_contains")
+    source_contains = require_known_prefix(params.get("source_biz_id_contains"))
     cursor = ctx.resolve_outbox_cursor(source_contains)
     if cursor is None and ctx.previous_step_cursor is not None:
         cursor = ctx.previous_step_cursor
     if cursor is None:
-        cursor = snapshot_outbox_cursor(ctx.conn, source_contains)
+        cursor = snapshot_outbox_cursor(ctx.conn)
     grace_sec = float(params.get("grace_sec", 2))
     time.sleep(grace_sec)
     row = db_mod.fetch_outbox_after_id(ctx.conn, cursor.min_id, source_contains)
@@ -274,11 +273,11 @@ def verify_subject_roles(ctx: StepContext, params: dict[str, Any]) -> None:
 
 @register("prepare_outbox_wait")
 def prepare_outbox_wait(ctx: StepContext, params: dict[str, Any]) -> None:
-    """在 API 变更前记录 outbox 游标（可与 wait_outbox 配对，避免陈旧 SUCCESS）。"""
-    source_contains = params.get("source_biz_id_contains")
-    cursor = snapshot_outbox_cursor(ctx.conn, source_contains)
+    """在 API 变更前记录全局 outbox 游标（与 wait_outbox 配对）。"""
+    source_contains = require_known_prefix(params.get("source_biz_id_contains"))
+    cursor = snapshot_outbox_cursor(ctx.conn)
     ctx.remember_outbox_cursor(source_contains, cursor)
-    print(f"[step] prepare_outbox_wait cursor min_id={cursor.min_id}")
+    print(f"[step] prepare_outbox_wait cursor min_id={cursor.min_id} filter={source_contains!r}")
 
 
 @register("reconcile_user")

@@ -8,6 +8,7 @@ from typing import Any
 
 from auth_harness.assertions.event import assert_event_counts
 from auth_harness.assertions.user_codes import assert_user_codes
+from auth_harness.domain.outbox_ops import require_known_prefix
 from auth_harness.infrastructure import db as db_mod
 from auth_harness.steps.context import StepContext
 from auth_harness.wait.outbox import snapshot_outbox_cursor
@@ -65,12 +66,12 @@ class AssertRunner:
 
     def _assert_no_outbox(self, block: dict[str, Any]) -> None:
         """负向：不应产生新 outbox。"""
-        source_contains = block.get("source_biz_id_contains")
+        source_contains = require_known_prefix(block.get("source_biz_id_contains"))
         cursor = self._ctx.resolve_outbox_cursor(source_contains)
         if cursor is None and self._ctx.previous_step_cursor is not None:
             cursor = self._ctx.previous_step_cursor
         if cursor is None:
-            cursor = snapshot_outbox_cursor(self._ctx.conn, source_contains)
+            cursor = snapshot_outbox_cursor(self._ctx.conn)
         grace_sec = float(block.get("no_outbox_grace_sec", 2))
         time.sleep(grace_sec)
         row = db_mod.fetch_outbox_after_id(self._ctx.conn, cursor.min_id, source_contains)

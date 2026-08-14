@@ -49,7 +49,7 @@ class ScenarioRunner:
         conn = db_mod.connect(config)
         rds = redis_mod.connect(config)
         ctx = StepContext(config=config, conn=conn, rds=rds, api=api)
-        ctx.step_entry_cursor = snapshot_outbox_cursor(conn, None)
+        ctx.step_entry_cursor = snapshot_outbox_cursor(conn)
 
         try:
             for block_name in ("setup", "steps"):
@@ -67,7 +67,7 @@ class ScenarioRunner:
     def _run_step(self, ctx: StepContext, step: dict[str, Any]) -> None:
         """执行单步；将上一步入口游标交给 wait_outbox 使用。"""
         ctx.previous_step_cursor = ctx.step_entry_cursor
-        ctx.step_entry_cursor = snapshot_outbox_cursor(ctx.conn, None)
+        ctx.step_entry_cursor = snapshot_outbox_cursor(ctx.conn)
         self._registry.execute(ctx, step)
 
 

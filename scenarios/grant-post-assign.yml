@@ -7,7 +7,6 @@ setup:
       is_primary: true
       status: 1
       wait_outbox: true
-      outbox_source_contains: "create-post:9001002003"
 steps:
   - prepare_outbox_wait:
       source_biz_id_contains: "replace-roles:"
