@@ -16,16 +16,14 @@ WITH user_subjects AS (
     SELECT 'USER' AS sub_type, %s AS sub_id
     UNION ALL
     SELECT 'DEPT' AS sub_type, dc.ancestor_id AS sub_id
-    FROM user_dept ud
+    FROM v_user_dept_effective ud
     JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-    JOIN sys_dept d ON d.id = ud.dept_id AND d.status = 1
     JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
-    WHERE ud.user_id = %s AND ud.status IN (1, 2)
+    WHERE ud.user_id = %s
     UNION ALL
     SELECT 'POST' AS sub_type, up.post_id AS sub_id
-    FROM user_post up
-    INNER JOIN sys_post sp ON sp.id = up.post_id AND sp.status = 1
-    WHERE up.user_id = %s AND up.status IN (1, 2)
+    FROM v_user_post_effective up
+    WHERE up.user_id = %s
 )
 SELECT DISTINCT r.role_code
 FROM grant_table gt
@@ -40,16 +38,14 @@ WITH user_subjects AS (
     SELECT 'USER' AS sub_type, %s AS sub_id
     UNION ALL
     SELECT 'DEPT' AS sub_type, dc.ancestor_id AS sub_id
-    FROM user_dept ud
+    FROM v_user_dept_effective ud
     JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-    JOIN sys_dept d ON d.id = ud.dept_id AND d.status = 1
     JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
-    WHERE ud.user_id = %s AND ud.status IN (1, 2)
+    WHERE ud.user_id = %s
     UNION ALL
     SELECT 'POST' AS sub_type, up.post_id AS sub_id
-    FROM user_post up
-    INNER JOIN sys_post sp ON sp.id = up.post_id AND sp.status = 1
-    WHERE up.user_id = %s AND up.status IN (1, 2)
+    FROM v_user_post_effective up
+    WHERE up.user_id = %s
 ),
 all_role_ids AS (
     SELECT DISTINCT r.id AS role_id
@@ -171,16 +167,15 @@ def fetch_all(
 
 
 def count_dept_members(conn: pymysql.connections.Connection, dept_id: int) -> int:
-    """统计部门子树内活跃成员数。"""
+    """统计部门子树内有效任职成员数。"""
     row = fetch_one(
         conn,
         """
         SELECT COUNT(DISTINCT ud.user_id) AS cnt
-        FROM user_dept ud
+        FROM v_user_dept_effective ud
         INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-        INNER JOIN sys_dept d ON d.id = ud.dept_id AND d.status = 1
         INNER JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
-        WHERE dc.ancestor_id = %s AND ud.status IN (1, 2)
+        WHERE dc.ancestor_id = %s
         """,
         (dept_id,),
     )
@@ -188,14 +183,15 @@ def count_dept_members(conn: pymysql.connections.Connection, dept_id: int) -> in
 
 
 def list_dept_user_ids(conn: pymysql.connections.Connection, dept_id: int) -> list[int]:
-    """列出部门子树成员 userId。"""
+    """列出部门子树有效任职成员 userId。"""
     rows = fetch_all(
         conn,
         """
         SELECT DISTINCT ud.user_id
-        FROM user_dept ud
+        FROM v_user_dept_effective ud
         INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-        WHERE dc.ancestor_id = %s AND ud.status IN (1, 2)
+        INNER JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
+        WHERE dc.ancestor_id = %s
         ORDER BY ud.user_id
         """,
         (dept_id,),
@@ -240,12 +236,12 @@ def query_subject_role_codes(
 def find_user_dept_id(
     conn: pymysql.connections.Connection, user_id: int, dept_id: int
 ) -> int | None:
-    """查找用户-部门关联主键。"""
+    """查找用户-部门关联主键（基表）。"""
     row = fetch_one(
         conn,
         """
         SELECT id FROM user_dept
-        WHERE user_id = %s AND dept_id = %s AND status IN (1, 2)
+        WHERE user_id = %s AND dept_id = %s
         LIMIT 1
         """,
         (user_id, dept_id),
@@ -256,12 +252,12 @@ def find_user_dept_id(
 def find_any_user_dept(
     conn: pymysql.connections.Connection, user_id: int
 ) -> dict[str, Any] | None:
-    """查找用户任意一条有效部门关联（主部门优先）。"""
+    """查找用户任意一条部门关联（主部门优先，基表）。"""
     return fetch_one(
         conn,
         """
         SELECT id, dept_id FROM user_dept
-        WHERE user_id = %s AND status IN (1, 2)
+        WHERE user_id = %s
         ORDER BY is_primary DESC, id ASC
         LIMIT 1
         """,
@@ -272,12 +268,12 @@ def find_any_user_dept(
 def find_user_post_id(
     conn: pymysql.connections.Connection, user_id: int, post_id: int
 ) -> int | None:
-    """查找用户-岗位关联主键。"""
+    """查找用户-岗位关联主键（基表）。"""
     row = fetch_one(
         conn,
         """
         SELECT id FROM user_post
-        WHERE user_id = %s AND post_id = %s AND status IN (1, 2)
+        WHERE user_id = %s AND post_id = %s
         LIMIT 1
         """,
         (user_id, post_id),

@@ -84,14 +84,12 @@ class ApiClient:
         user_id: int,
         dept_id: int,
         *,
-        status: int = 1,
         is_primary: bool = True,
         remark: str | None = None,
     ) -> None:
         """新增用户部门关联。"""
         payload: dict[str, Any] = {
             "deptId": dept_id,
-            "status": status,
             "isPrimary": is_primary,
         }
         if remark is not None:
@@ -104,14 +102,12 @@ class ApiClient:
         relation_id: int,
         dept_id: int,
         *,
-        status: int = 1,
         is_primary: bool = True,
         remark: str | None = None,
     ) -> None:
         """更新用户部门关联。"""
         payload: dict[str, Any] = {
             "deptId": dept_id,
-            "status": status,
             "isPrimary": is_primary,
         }
         if remark is not None:
@@ -127,14 +123,12 @@ class ApiClient:
         user_id: int,
         post_id: int,
         *,
-        status: int = 1,
         is_primary: bool = True,
         remark: str | None = None,
     ) -> None:
         """新增用户岗位关联。"""
         payload: dict[str, Any] = {
             "postId": post_id,
-            "status": status,
             "isPrimary": is_primary,
         }
         if remark is not None:

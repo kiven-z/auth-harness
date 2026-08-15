@@ -81,7 +81,6 @@ def _resolve_put_user_dept_relation_id(ctx: StepContext, params: dict[str, Any])
 
 def _relation_kwargs(params: dict[str, Any]) -> dict[str, Any]:
     return {
-        "status": int(params.get("status", 1)),
         "is_primary": bool(params.get("is_primary", True)),
         "remark": params.get("remark"),
     }

@@ -32,13 +32,13 @@ SELECT DISTINCT user_id FROM (
     INNER JOIN user_dept ud ON gt.subject_type = 'DEPT'
     INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id AND dc.ancestor_id = gt.subject_id
     INNER JOIN sys_dept d ON d.id = dc.descendant_id
-    WHERE r.role_code IN ({placeholders}) AND ud.status IN (1, 2)
+    WHERE r.role_code IN ({placeholders})
     UNION
     SELECT up.user_id
     FROM grant_table gt
     INNER JOIN sys_role r ON r.id = gt.role_id
     INNER JOIN user_post up ON gt.subject_type = 'POST' AND up.post_id = gt.subject_id
-    WHERE r.role_code IN ({placeholders}) AND up.status IN (1, 2)
+    WHERE r.role_code IN ({placeholders})
 ) impacted
 ORDER BY user_id
 """
@@ -55,14 +55,14 @@ SELECT DISTINCT ud.user_id
 FROM user_dept ud
 INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
 INNER JOIN sys_dept d ON d.id = dc.descendant_id
-WHERE dc.ancestor_id IN ({placeholders}) AND ud.status IN (1, 2)
+WHERE dc.ancestor_id IN ({placeholders})
 ORDER BY ud.user_id
 """
 
 SQL_GRANT_POST = """
 SELECT DISTINCT up.user_id
 FROM user_post up
-WHERE up.post_id IN ({placeholders}) AND up.status IN (1, 2)
+WHERE up.post_id IN ({placeholders})
 ORDER BY up.user_id
 """
 

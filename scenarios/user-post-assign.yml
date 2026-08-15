@@ -10,7 +10,6 @@ steps:
       user_id: 9001002002
       post_id: 9000600001
       is_primary: true
-      status: 1
   - wait_outbox:
       source_biz_id_contains: "create-post:"
       timeout_sec: 60

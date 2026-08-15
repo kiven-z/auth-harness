@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import yaml
@@ -154,6 +155,63 @@ class OutboxOpsTest(unittest.TestCase):
                     if isinstance(step, dict) and "prepare_outbox_wait" in step:
                         leftover.append(path.name)
         self.assertEqual(leftover, [])
+
+    def test_relation_steps_have_no_status(self) -> None:
+        relation_steps = {
+            "post_user_dept",
+            "put_user_dept",
+            "ensure_user_dept",
+            "post_user_post",
+            "ensure_user_post",
+        }
+        leftover: list[str] = []
+        for path in sorted(SCENARIOS_DIR.glob("*.yml")):
+            data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+            for block_name in ("setup", "steps"):
+                for step in data.get(block_name) or []:
+                    if not isinstance(step, dict):
+                        continue
+                    name, params = next(iter(step.items()))
+                    if name in relation_steps and isinstance(params, dict) and "status" in params:
+                        leftover.append(f"{path.name}:{name}")
+        self.assertEqual(leftover, [])
+
+
+class SeedSqlContractTest(unittest.TestCase):
+    """种子任职 INSERT 不得带关联 status 列。"""
+
+    def test_user_org_inserts_drop_status_column(self) -> None:
+        from auth_harness.domain.paths import SQL_DIR
+
+        leftover: list[str] = []
+        for name in ("seed_users_bulk.sql", "seed_anchors.sql"):
+            text = (SQL_DIR / name).read_text(encoding="utf-8")
+            for line in text.splitlines():
+                stripped = line.strip().upper()
+                if stripped.startswith("INSERT INTO USER_DEPT") or stripped.startswith("INSERT INTO USER_POST"):
+                    if "STATUS" in stripped:
+                        leftover.append(f"{name}: {line.strip()}")
+        self.assertEqual(leftover, [])
+
+
+class EffectiveMembershipSqlContractTest(unittest.TestCase):
+    """oracle 走有效 view；查任职行打基表。"""
+
+    def test_oracle_sql_uses_effective_views(self) -> None:
+        from auth_harness.infrastructure.db import ORACLE_PERMISSIONS_SQL, ORACLE_ROLES_SQL
+
+        for sql in (ORACLE_ROLES_SQL, ORACLE_PERMISSIONS_SQL):
+            self.assertIn("v_user_dept_effective", sql)
+            self.assertIn("v_user_post_effective", sql)
+            self.assertNotIn("status IN", sql)
+
+    def test_lookup_sql_hits_base_tables(self) -> None:
+        from auth_harness.infrastructure import db as db_mod
+
+        source = Path(db_mod.__file__).read_text(encoding="utf-8")
+        self.assertIn("FROM user_dept", source)
+        self.assertIn("FROM user_post", source)
+        self.assertNotIn("status IN (1, 2)", source)
 
 
 class FlushHarnessProfilesTest(unittest.TestCase):

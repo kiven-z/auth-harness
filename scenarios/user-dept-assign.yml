@@ -10,7 +10,6 @@ steps:
       user_id: 9001002001
       dept_id: 9000100002
       is_primary: false
-      status: 1
   - wait_outbox:
       source_biz_id_contains: "create-dept:"
       timeout_sec: 60

@@ -42,6 +42,13 @@ class ResolveImpactSqlTest(unittest.TestCase):
         result = resolve_impacted_user_ids(conn, "GRANT_USER", subject_ids=[9001002001])
         self.assertEqual(result, {9001002001})
 
+    def test_impact_sql_hits_base_tables(self) -> None:
+        from auth_harness.domain.impact import SQL_BY_ROLE_CODES, SQL_GRANT_DEPT, SQL_GRANT_POST
+
+        for sql in (SQL_BY_ROLE_CODES, SQL_GRANT_DEPT, SQL_GRANT_POST):
+            self.assertNotIn("v_user_", sql)
+            self.assertNotIn("status IN", sql)
+
 
 if __name__ == "__main__":
     unittest.main()

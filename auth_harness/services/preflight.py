@@ -38,11 +38,50 @@ def _check_mysql(config: HarnessConfig, failures: list[str]) -> None:
             row = db_mod.fetch_one(conn, "SELECT 1 AS ok")
             if not row:
                 raise RuntimeError("查询无结果")
+            schema_failures: list[str] = []
+            _check_membership_schema(conn, schema_failures)
+            if schema_failures:
+                failures.extend(schema_failures)
+                return
         finally:
             conn.close()
         print(f"[preflight] MySQL ({config.mysql['database']}): OK")
     except Exception as exc:
         failures.append(f"MySQL: {exc}")
+
+
+def _check_membership_schema(conn, failures: list[str]) -> None:
+    """任职须已 DROP status，且有效 view 已建。"""
+    leftover = db_mod.fetch_one(
+        conn,
+        """
+        SELECT COUNT(*) AS cnt
+        FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name IN ('user_dept', 'user_post')
+          AND column_name = 'status'
+        """,
+    )
+    if leftover and int(leftover["cnt"]) > 0:
+        failures.append(
+            "user_dept/user_post 仍有 status 列，请先执行 "
+            "auth-server/db/user-org-relation-effective-view.sql"
+        )
+        return
+    views = db_mod.fetch_one(
+        conn,
+        """
+        SELECT COUNT(*) AS cnt
+        FROM information_schema.views
+        WHERE table_schema = DATABASE()
+          AND table_name IN ('v_user_dept_effective', 'v_user_post_effective')
+        """,
+    )
+    if not views or int(views["cnt"]) != 2:
+        failures.append(
+            "缺少 v_user_dept_effective / v_user_post_effective，请先执行 "
+            "auth-server/db/user-org-relation-effective-view.sql"
+        )
 
 
 def _check_redis(config: HarnessConfig, failures: list[str]) -> None:
