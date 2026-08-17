@@ -253,7 +253,7 @@ def data_scope(ctx: click.Context, base_url: str | None, username: str | None) -
     "fixture_path",
     type=click.Path(path_type=Path, exists=True),
     default=None,
-    help="导出冒烟 fixture（默认 fixtures/example_order_export_cases.yml）",
+    help="导出探针 fixture（默认 fixtures/example_order_export_cases.yml）",
 )
 @click.option(
     "--base-url",
@@ -268,7 +268,7 @@ def example_order_export(
     base_url: str | None,
     username: str | None,
 ) -> None:
-    """提交 example_order 异步导出，轮询至 SUCCESS 并校验产物链接。"""
+    """提交 example_order 异步导出：多账号并行建任务，轮询 SUCCESS 并校验执行重叠。"""
     config = require_config(ctx)
     raise SystemExit(
         run_example_order_export_probe(

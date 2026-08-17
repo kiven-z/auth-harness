@@ -1,9 +1,12 @@
-"""登录后提交 example_order 异步导出，轮询至终态并断言成功。"""
+"""登录后提交 example_order 异步导出：多账号并行建任务，轮询至终态并断言成功。"""
 
 from __future__ import annotations
 
 import time
 import uuid
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +27,20 @@ DOWNLOAD_LINK_PATH = "/api/system/me/file-export-tasks/{task_id}/download-link"
 
 TERMINAL_STATUSES = frozenset({"SUCCESS", "FAILED", "CANCELLED", "EXPIRED"})
 DEFAULT_TIMEOUT_SECONDS = 90
-DEFAULT_POLL_INTERVAL_SECONDS = 2.0
+DEFAULT_POLL_INTERVAL_SECONDS = 0.5
+
+
+@dataclass
+class ExportCaseRun:
+    """单账号一次导出探测的运行态。"""
+
+    username: str
+    note: str
+    expect_min_rows: int | None
+    token: str = ""
+    scoped_count: int = 0
+    task_id: int | None = None
+    detail: dict[str, Any] = field(default_factory=dict)
 
 
 def run_example_order_export_probe(
@@ -34,7 +50,7 @@ def run_example_order_export_probe(
     base_url: str | None = None,
     username: str | None = None,
 ) -> int:
-    """按 fixture 提交异步导出并断言成功；返回失败数（0=全过）。"""
+    """按 fixture 并行提交异步导出并断言成功与执行重叠；返回失败数（0=全过）。"""
     fixture = _load_fixture(fixture_path or DEFAULT_FIXTURE)
     gateway = (base_url or _gateway_from_config(config)).rstrip("/")
     password = str(fixture.get("password") or config.admin.get("password") or "Admin@123456")
@@ -49,29 +65,87 @@ def run_example_order_export_probe(
 
     click.echo(
         f"[example-order-export] gateway={gateway} cases={len(cases)} "
-        f"timeout={timeout_seconds}s poll={poll_interval}s"
+        f"timeout={timeout_seconds}s poll={poll_interval}s parallel={len(cases) >= 2}"
     )
+    try:
+        runs = _prepare_runs(gateway, password, cases)
+        _create_tasks_parallel(gateway, runs)
+        max_running = _wait_all_terminal(gateway, runs, timeout_seconds, poll_interval)
+    except Exception as exc:  # noqa: BLE001 — 探针汇总结果
+        click.echo(f"[example-order-export] 请求失败: {exc}", err=True)
+        return 1
+
     failures = 0
-    for case in cases:
-        ok, detail = _probe_one(gateway, password, case, timeout_seconds, poll_interval)
-        label = case.get("username")
-        note = case.get("note") or ""
+    for run in runs:
+        ok, detail = _evaluate_completed_run(gateway, run)
+        label = run.username
+        note = run.note
         if ok:
             click.echo(f"  PASS  {label:16} {detail}  # {note}")
         else:
             failures += 1
             click.echo(f"  FAIL  {label:16} {detail}  # {note}", err=True)
 
+    if failures == 0 and len(runs) >= 2:
+        ok, detail = _evaluate_parallel_overlap(runs, max_running)
+        if ok:
+            click.echo(f"  PASS  {'parallel':16} {detail}")
+        else:
+            failures += 1
+            click.echo(f"  FAIL  {'parallel':16} {detail}", err=True)
+
     if failures:
-        click.echo(f"[example-order-export] {failures}/{len(cases)} 失败", err=True)
+        click.echo(f"[example-order-export] {failures} 项失败", err=True)
     else:
-        click.echo(f"[example-order-export] 全部通过 ({len(cases)})")
+        click.echo(f"[example-order-export] 全部通过 (cases={len(cases)})")
     return failures
 
 
 def is_terminal_status(status: str | None) -> bool:
     """任务是否已进入终态。"""
     return status is not None and status.upper() in TERMINAL_STATUSES
+
+
+def parse_instant(value: Any) -> datetime | None:
+    """将任务详情中的时间字段解析为 UTC datetime。"""
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value.astimezone(timezone.utc)
+    if isinstance(value, (int, float)):
+        ts = float(value)
+        if ts > 1e11:
+            ts /= 1000.0
+        return datetime.fromtimestamp(ts, tz=timezone.utc)
+    text = str(value).strip()
+    if text.isdigit():
+        return parse_instant(int(text))
+    normalized = text.replace("Z", "+00:00")
+    parsed = datetime.fromisoformat(normalized)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def execution_windows_overlap(
+    start_a: datetime,
+    end_a: datetime,
+    start_b: datetime,
+    end_b: datetime,
+) -> bool:
+    """两段半开区间 [start, end) 是否相交；首尾相接不算重叠。"""
+    return start_a < end_b and start_b < end_a
+
+
+def any_execution_windows_overlap(windows: list[tuple[datetime, datetime]]) -> bool:
+    """是否存在至少一对执行窗口重叠。"""
+    for index, left in enumerate(windows):
+        for right in windows[index + 1 :]:
+            if execution_windows_overlap(*left, *right):
+                return True
+    return False
 
 
 def _gateway_from_config(config: HarnessConfig) -> str:
@@ -89,50 +163,123 @@ def _load_fixture(path: Path) -> dict[str, Any]:
     return raw
 
 
-def _probe_one(
-    gateway: str,
-    password: str,
-    case: dict[str, Any],
-    timeout_seconds: int,
-    poll_interval: float,
-) -> tuple[bool, str]:
-    username = str(case["username"])
-    expect_min_rows = case.get("expect_min_rows")
-    try:
+def _prepare_runs(gateway: str, password: str, cases: list[dict[str, Any]]) -> list[ExportCaseRun]:
+    runs: list[ExportCaseRun] = []
+    for case in cases:
+        username = str(case["username"])
         token = _login(gateway, username, password)
         scoped_count = len(_fetch_orders(gateway, token))
-        task_id = _create_export_task(gateway, token)
-        detail = _wait_terminal(gateway, token, task_id, timeout_seconds, poll_interval)
-    except Exception as exc:  # noqa: BLE001 — 探针汇总全部账号结果
-        return False, f"请求失败: {exc}"
+        expect_min = case.get("expect_min_rows")
+        runs.append(
+            ExportCaseRun(
+                username=username,
+                note=str(case.get("note") or ""),
+                expect_min_rows=int(expect_min) if expect_min is not None else None,
+                token=token,
+                scoped_count=scoped_count,
+            )
+        )
+    return runs
 
+
+def _create_tasks_parallel(gateway: str, runs: list[ExportCaseRun]) -> None:
+    def create_one(run: ExportCaseRun) -> int:
+        return _create_export_task(gateway, run.token)
+
+    workers = max(1, len(runs))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        task_ids = list(pool.map(create_one, runs))
+    for run, task_id in zip(runs, task_ids, strict=True):
+        run.task_id = task_id
+
+
+def _wait_all_terminal(
+    gateway: str,
+    runs: list[ExportCaseRun],
+    timeout_seconds: int,
+    poll_interval: float,
+) -> int:
+    deadline = time.monotonic() + timeout_seconds
+    max_running = 0
+    while time.monotonic() < deadline:
+        running = 0
+        all_terminal = True
+        for run in runs:
+            if run.task_id is None:
+                raise RuntimeError(f"{run.username} 未拿到 taskId")
+            run.detail = _fetch_task_detail(gateway, run.token, run.task_id)
+            status = str(run.detail.get("status") or "")
+            if status.upper() == "RUNNING":
+                running += 1
+            if not is_terminal_status(status):
+                all_terminal = False
+        max_running = max(max_running, running)
+        if all_terminal:
+            return max_running
+        time.sleep(poll_interval)
+    summaries = []
+    for run in runs:
+        status = (run.detail or {}).get("status")
+        summaries.append(f"{run.username}#{run.task_id}={status}")
+    raise TimeoutError(
+        f"在 {timeout_seconds}s 内未全部终态，maxRunning={max_running} last=[{', '.join(summaries)}]"
+    )
+
+
+def _evaluate_completed_run(gateway: str, run: ExportCaseRun) -> tuple[bool, str]:
+    detail = run.detail or {}
     status = str(detail.get("status") or "")
     processed = detail.get("processedRows")
     total = detail.get("totalRows")
     file_record_id = detail.get("fileRecordId")
     error_message = detail.get("errorMessage")
     summary = (
-        f"taskId={task_id} status={status} processed={processed} "
-        f"total={total} scoped={scoped_count} fileRecordId={file_record_id}"
+        f"taskId={run.task_id} status={status} processed={processed} "
+        f"total={total} scoped={run.scoped_count} fileRecordId={file_record_id}"
     )
-
     if status != "SUCCESS":
         return False, f"{summary} error={error_message}"
     if file_record_id is None:
         return False, f"{summary} 缺少产物 fileRecordId"
-    if processed is None or int(processed) != scoped_count:
-        return False, f"{summary} processedRows 应等于列表可见行数 {scoped_count}"
-    if expect_min_rows is not None and int(processed) < int(expect_min_rows):
-        return False, f"{summary} processedRows < expect_min_rows={expect_min_rows}"
-
+    if processed is None or int(processed) != run.scoped_count:
+        return False, f"{summary} processedRows 应等于列表可见行数 {run.scoped_count}"
+    if run.expect_min_rows is not None and int(processed) < run.expect_min_rows:
+        return False, f"{summary} processedRows < expect_min_rows={run.expect_min_rows}"
     try:
-        download = _fetch_download_link(gateway, token, task_id)
+        download = _fetch_download_link(gateway, run.token, int(run.task_id or 0))
     except Exception as exc:  # noqa: BLE001
         return False, f"{summary} 下载链接失败: {exc}"
     download_url = download.get("url") or download.get("downloadUrl") or download.get("presignedUrl")
     if not download_url:
         return False, f"{summary} 下载链接为空: {download}"
     return True, summary
+
+
+def _evaluate_parallel_overlap(runs: list[ExportCaseRun], max_running: int) -> tuple[bool, str]:
+    windows: list[tuple[datetime, datetime]] = []
+    labels: list[str] = []
+    for run in runs:
+        started = parse_instant((run.detail or {}).get("startedAt"))
+        finished = parse_instant((run.detail or {}).get("finishedAt"))
+        if started is None or finished is None:
+            return False, (
+                f"maxRunning={max_running} {run.username}#{run.task_id} 缺少 startedAt/finishedAt，"
+                "无法判断是否并行"
+            )
+        if finished <= started:
+            return False, (
+                f"maxRunning={max_running} {run.username}#{run.task_id} "
+                f"finishedAt={finished.isoformat()} 不晚于 startedAt={started.isoformat()}"
+            )
+        windows.append((started, finished))
+        labels.append(
+            f"{run.username}#{run.task_id}[{started.isoformat()}..{finished.isoformat()})"
+        )
+    overlapped = any_execution_windows_overlap(windows)
+    summary = f"maxRunning={max_running} overlap={overlapped} " + " ".join(labels)
+    if max_running >= 2 or overlapped:
+        return True, summary
+    return False, f"{summary} 执行窗口无重叠且未见同时 RUNNING（仍是全局串行）"
 
 
 def _login(gateway: str, username: str, password: str) -> str:
@@ -190,23 +337,6 @@ def _create_export_task(gateway: str, token: str) -> int:
     if task_id is None:
         raise RuntimeError(f"创建导出无 taskId: {body}")
     return int(task_id)
-
-
-def _wait_terminal(
-    gateway: str,
-    token: str,
-    task_id: int,
-    timeout_seconds: int,
-    poll_interval: float,
-) -> dict[str, Any]:
-    deadline = time.monotonic() + timeout_seconds
-    last: dict[str, Any] = {}
-    while time.monotonic() < deadline:
-        last = _fetch_task_detail(gateway, token, task_id)
-        if is_terminal_status(str(last.get("status") or "")):
-            return last
-        time.sleep(poll_interval)
-    raise TimeoutError(f"任务 {task_id} 在 {timeout_seconds}s 内未终态，最后状态={last}")
 
 
 def _fetch_task_detail(gateway: str, token: str, task_id: int) -> dict[str, Any]:

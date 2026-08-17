@@ -1,9 +1,10 @@
-# example_order 异步导出基础冒烟
+# example_order 异步导出：多账号并行建任务
 # 依赖：Release 演示账号 + example_order 种子 + service-example + file Worker 已启动
+# 两条及以上 case 时会同时 POST export/async，断言执行窗口重叠（拦住全局串行）
 
 password: Admin@123456
 timeout_seconds: 90
-poll_interval_seconds: 2
+poll_interval_seconds: 0.5
 
 cases:
   - username: Administrator
