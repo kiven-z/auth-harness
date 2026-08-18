@@ -59,10 +59,6 @@ INTEGRATION_SCENARIOS = (
     "user-dept-remove.yml",
     "user-post-assign.yml",
     "user-post-remove.yml",
-)
-
-# 待后端补充失效触发（SysUserServiceImpl 当前未 submit 失效事件）
-PENDING_BACKEND_SCENARIOS = (
     "user-status-change.yml",
     "user-delete.yml",
 )

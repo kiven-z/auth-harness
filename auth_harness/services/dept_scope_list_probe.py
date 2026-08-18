@@ -11,11 +11,11 @@ import yaml
 
 from auth_harness.config import HarnessConfig
 from auth_harness.domain.paths import HARNESS_ROOT
+from auth_harness.services.example_orders_api import ORDERS_PATH, fetch_all_example_orders
 
 SUCCESS_CODE = 0
 DEFAULT_FIXTURE = HARNESS_ROOT / "fixtures" / "dept_scope_list_cases.yml"
 DEFAULT_GATEWAY = "http://127.0.0.1:8080"
-ORDERS_PATH = "/api/example/orders"
 
 
 def run_dept_scope_list_probe(
@@ -76,7 +76,7 @@ def _probe_one(gateway: str, password: str, case: dict[str, Any]) -> tuple[bool,
 
     try:
         token = _login(gateway, username, password)
-        rows = _fetch_orders(gateway, token)
+        rows = fetch_all_example_orders(gateway, token)
     except Exception as exc:  # noqa: BLE001 — 探针要汇总全部账号结果
         return False, f"请求失败: {exc}"
 
@@ -112,18 +112,3 @@ def _login(gateway: str, username: str, password: str) -> str:
     if not token:
         raise RuntimeError(f"登录无 accessToken: {body}")
     return str(token)
-
-
-def _fetch_orders(gateway: str, token: str) -> list[Any]:
-    url = f"{gateway}{ORDERS_PATH}"
-    response = requests.get(url, headers={"Authorization": f"Bearer {token}"}, timeout=30)
-    response.raise_for_status()
-    body = response.json()
-    if body.get("code") != SUCCESS_CODE:
-        raise RuntimeError(f"{ORDERS_PATH} 失败: {body}")
-    data = body.get("data")
-    if data is None:
-        return []
-    if not isinstance(data, list):
-        raise RuntimeError(f"{ORDERS_PATH} 返回非列表: {body}")
-    return data

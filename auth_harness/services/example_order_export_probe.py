@@ -16,11 +16,11 @@ import yaml
 
 from auth_harness.config import HarnessConfig
 from auth_harness.domain.paths import HARNESS_ROOT
+from auth_harness.services.example_orders_api import fetch_all_example_orders
 
 SUCCESS_CODE = 0
 DEFAULT_FIXTURE = HARNESS_ROOT / "fixtures" / "example_order_export_cases.yml"
 DEFAULT_GATEWAY = "http://127.0.0.1:8080"
-ORDERS_PATH = "/api/example/orders"
 EXPORT_ASYNC_PATH = "/api/example/orders/export/async"
 TASK_DETAIL_PATH = "/api/system/me/file-export-tasks/{task_id}"
 DOWNLOAD_LINK_PATH = "/api/system/me/file-export-tasks/{task_id}/download-link"
@@ -168,7 +168,7 @@ def _prepare_runs(gateway: str, password: str, cases: list[dict[str, Any]]) -> l
     for case in cases:
         username = str(case["username"])
         token = _login(gateway, username, password)
-        scoped_count = len(_fetch_orders(gateway, token))
+        scoped_count = len(fetch_all_example_orders(gateway, token))
         expect_min = case.get("expect_min_rows")
         runs.append(
             ExportCaseRun(
@@ -301,21 +301,6 @@ def _login(gateway: str, username: str, password: str) -> str:
 
 def _auth_headers(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
-
-
-def _fetch_orders(gateway: str, token: str) -> list[Any]:
-    url = f"{gateway}{ORDERS_PATH}"
-    response = requests.get(url, headers=_auth_headers(token), timeout=30)
-    response.raise_for_status()
-    body = response.json()
-    if body.get("code") != SUCCESS_CODE:
-        raise RuntimeError(f"{ORDERS_PATH} 失败: {body}")
-    data = body.get("data")
-    if data is None:
-        return []
-    if not isinstance(data, list):
-        raise RuntimeError(f"{ORDERS_PATH} 返回非列表: {body}")
-    return data
 
 
 def _create_export_task(gateway: str, token: str) -> int:

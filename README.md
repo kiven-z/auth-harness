@@ -173,15 +173,11 @@ make example-order-export
 
 ### 扩展 L2（13）
 
-role-permission-add/remove, role-disable, permission-code-update, user-dept-assign/move/remove, dept-parent-change, user-post-assign/remove
+role-permission-add/remove, role-disable, permission-code-update, user-dept-assign/move/remove, dept-parent-change, user-post-assign/remove, user-status-change, user-delete
 
 ### 负向（3）
 
 negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outbox`）
-
-### 待后端（2）
-
-`user-status-change.yml`、`user-delete.yml` — `SysUserServiceImpl` 当前未触发失效 outbox，未纳入 `make integration`。
 
 ## 步骤类型（节选）
 
