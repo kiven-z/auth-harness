@@ -8,7 +8,7 @@ from auth_harness.infrastructure import system_paths as paths
 
 
 class SystemPathsTest(unittest.TestCase):
-    """Admin API 路径须与 auth-server 一致。"""
+    """Admin API 路径须与 auth-server-pro 一致。"""
 
     def test_dept_move_uses_body_id_not_path_param(self) -> None:
         self.assertEqual(paths.dept_move(), "/api/system/dept/move")

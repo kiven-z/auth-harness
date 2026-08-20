@@ -100,7 +100,7 @@ class CheckAgainstSeedTest(unittest.TestCase):
         if not DEFAULT_PERMISSION_SEED_PATH.exists():
             self.skipTest("Release seed 不在本机")
         if not DEFAULT_AUTH_SERVER_ROOT.exists():
-            self.skipTest("auth-server 不在本机")
+            self.skipTest("auth-server-pro 不在本机")
         diff = check_permissions(
             server_root=DEFAULT_AUTH_SERVER_ROOT,
             seed_path=DEFAULT_PERMISSION_SEED_PATH,
@@ -117,7 +117,7 @@ class CheckAgainstSeedTest(unittest.TestCase):
         if not DEFAULT_PERMISSION_SEED_PATH.exists():
             self.skipTest("Release seed 不在本机")
         if not DEFAULT_AUTH_SERVER_ROOT.exists():
-            self.skipTest("auth-server 不在本机")
+            self.skipTest("auth-server-pro 不在本机")
         plan = perms_service.build_sync_plan(
             server_root=DEFAULT_AUTH_SERVER_ROOT,
             seed_path=DEFAULT_PERMISSION_SEED_PATH,

@@ -131,7 +131,7 @@ make dept-scope
 
 **阶段 2 — 行级过滤**：验证「画像 → SQL `@DataScope`」
 
-前置：空库已跑 Release `run-init.sh`（含 `13-seed-example-order.sql`，订单 id 1～12）；已有库可补灌 `auth-server/db/example-order-data-scope-demo.sql`。
+前置：空库已跑 Release `run-init.sh`（含 `13-seed-example-order.sql`，订单 id 1～12）；已有库可补灌 `auth-server-pro/db/example-order-data-scope-demo.sql`。
 
 ```bash
 make dept-scope-list
@@ -219,5 +219,5 @@ negative-dept-rename, negative-role-rename, negative-post-sort（`assert_no_outb
 ## 剩余缺口
 
 - **J-01/J-02**：Outbox Job 补偿场景（需关闭 sync-dispatch 或 mock Feign）
-- **U-01/U-02**：用户状态/删除失效（需 auth-server 补充 trigger）
+- **U-01/U-02**：用户状态/删除失效（需 auth-server-pro 补充 trigger）
 - **L1 C4**：L2 `event.impacted_user_count` 与 L1 集合自动比对（可后续加 assert 块）

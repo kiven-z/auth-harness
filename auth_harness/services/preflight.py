@@ -65,7 +65,7 @@ def _check_membership_schema(conn, failures: list[str]) -> None:
     if leftover and int(leftover["cnt"]) > 0:
         failures.append(
             "user_dept/user_post 仍有 status 列，请先执行 "
-            "auth-server/db/user-org-relation-effective-view.sql"
+            "auth-server-pro/db/user-org-relation-effective-view.sql"
         )
         return
     views = db_mod.fetch_one(
@@ -80,7 +80,7 @@ def _check_membership_schema(conn, failures: list[str]) -> None:
     if not views or int(views["cnt"]) != 2:
         failures.append(
             "缺少 v_user_dept_effective / v_user_post_effective，请先执行 "
-            "auth-server/db/user-org-relation-effective-view.sql"
+            "auth-server-pro/db/user-org-relation-effective-view.sql"
         )
 
 

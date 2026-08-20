@@ -1,7 +1,7 @@
 # 权限码中文名映射（扫代码后拼名：{resource}-{action}）
 # 新增资源/动作时补这里；怪名字用 overrides。
 
-# 扫描时排除的路径（相对 auth-server 根）
+# 扫描时排除的路径（相对 auth-server-pro 根）
 exclude_globs:
   - "**/src/test/**"
   - "**/service-example/**"

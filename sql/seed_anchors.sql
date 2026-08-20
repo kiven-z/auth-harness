@@ -25,7 +25,7 @@ INSERT INTO sys_user (
     (9001002099, 'harness_u_delete',  'harness_u_delete',  'harness_u_delete@harness.local',  '19000002099',
      '$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6peLmJSMq/t/mJi6', 1, 0, NOW(), NOW(), 1, 1, 0, 'delete disposable');
 
--- 任职无 status：人在 = 有行；兼职只走 is_primary。须已执行 auth-server 的 view DDL。
+-- 任职无 status：人在 = 有行；兼职只走 is_primary。须已执行 auth-server-pro 的 view DDL。
 -- u_dept_only：仅 D_CHILD
 INSERT INTO user_dept (id, user_id, dept_id, is_primary, created_at, updated_at, created_by, updated_by, version, remark)
 VALUES (9002002101, 9001002002, 9000100003, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness');

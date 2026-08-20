@@ -311,7 +311,7 @@ def _perms_path_options(fn):
         type=click.Path(path_type=Path, exists=True, file_okay=False),
         default=DEFAULT_AUTH_SERVER_ROOT,
         show_default=True,
-        help="auth-server 根目录",
+        help="auth-server-pro 根目录",
     )(fn)
     return fn
 

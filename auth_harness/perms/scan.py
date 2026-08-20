@@ -28,7 +28,7 @@ def scan_java_permissions(
     *,
     exclude_globs: tuple[str, ...] = (),
 ) -> list[ScannedPermission]:
-    """扫描 auth-server 下 Java 文件中的 decide 权限码。"""
+    """扫描 auth-server-pro 下 Java 文件中的 decide 权限码。"""
     root = server_root.resolve()
     hits: list[ScannedPermission] = []
     for path in sorted(root.rglob("*.java")):

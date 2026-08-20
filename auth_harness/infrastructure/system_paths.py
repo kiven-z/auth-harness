@@ -1,4 +1,4 @@
-"""system-service Admin API 路径（与 auth-server Controller 对齐）。
+"""system-service Admin API 路径（与 auth-server-pro Controller 对齐）。
 
 约定：
 - 资源 CRUD：PUT 集合路径 + body 含 id（部门/角色/权限/岗位）
