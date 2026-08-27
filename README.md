@@ -95,7 +95,7 @@ make test          # 单元测试
 
 ```bash
 make perms-scan
-make perms-check                          # 对照 assets/Release/db/02-seed-sys-permission.sql
+make perms-check                          # 对照 ../../assets/Release/db/02-seed-sys-permission.sql（Auth/assets）
 make perms-check ARGS='--db'              # 对照开发库（需 config.yml）
 make perms-gen ARGS='-o /tmp/perms.sql'   # 只生成缺失码 INSERT
 make perms-gen ARGS='--prune -o /tmp/perms.sql'   # INSERT + DELETE orphan
