@@ -14,8 +14,6 @@ IMPACT_KINDS = frozenset(
         "GRANT_DEPT",
         "GRANT_POST",
         "ROLE",
-        "USER_DEPT",
-        "USER_POST",
     }
 )
 
@@ -66,10 +64,6 @@ WHERE up.post_id IN ({placeholders})
 ORDER BY up.user_id
 """
 
-SQL_USER_DEPT = SQL_GRANT_DEPT
-SQL_USER_POST = SQL_GRANT_POST
-
-
 def resolve_impacted_user_ids(
     conn: pymysql.connections.Connection,
     kind: str,
@@ -93,8 +87,6 @@ def resolve_impacted_user_ids(
         "GRANT_USER": SQL_GRANT_USER,
         "GRANT_DEPT": SQL_GRANT_DEPT,
         "GRANT_POST": SQL_GRANT_POST,
-        "USER_DEPT": SQL_USER_DEPT,
-        "USER_POST": SQL_USER_POST,
     }
     return _query_user_ids(conn, sql_map[normalized_kind], subject_ids)
 

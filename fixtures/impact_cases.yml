@@ -21,11 +21,6 @@ cases:
     expected_user_ids: [9001002005]
 
   - id: M-01-user-dept-child
-    kind: USER_DEPT
+    kind: GRANT_DEPT
     subject_ids: [9000100003]
     expected_user_ids: [9001002002, 9001002004]
-
-  - id: M-05-user-post-fanout
-    kind: USER_POST
-    subject_ids: [9000600001]
-    expected_user_ids: [9001002003, 9001002004]
