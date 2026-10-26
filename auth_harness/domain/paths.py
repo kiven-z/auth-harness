@@ -9,10 +9,10 @@ FIXTURES_DIR = HARNESS_ROOT / "fixtures"
 EXAMPLE_CONFIG_PATH = HARNESS_ROOT / "config.example.yml"
 PERMISSIONS_CATALOG_PATH = FIXTURES_DIR / "permissions_catalog.yml"
 
-# 默认布局：auth-pro/{auth-harness,auth-server-pro}；共用启动包在 Auth/assets
+# 默认布局：auth-pro/{auth-harness,auth-server}；共用启动包在 Auth/assets
 _AUTH_PRO = HARNESS_ROOT.parent
 _AUTH_ROOT = _AUTH_PRO.parent
-DEFAULT_AUTH_SERVER_ROOT = _AUTH_PRO / "auth-server-pro"
+DEFAULT_AUTH_SERVER_ROOT = _AUTH_PRO / "auth-server"
 DEFAULT_PERMISSION_SEED_PATH = (
     _AUTH_ROOT / "assets" / "Release" / "db" / "02-seed-sys-permission.sql"
 )
