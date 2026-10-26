@@ -49,6 +49,7 @@ class ScanJavaTest(unittest.TestCase):
             ctrl.write_text(
                 "@PreAuthorize(\"@auth.decide('sys:user:query')\")\n"
                 "@PreAuthorize(\"@auth.decide('sys:user:create')\")\n"
+                "@PreAuthorize(\"@auth.decide('SYS:User:Query')\")\n"
                 "// SpEL @PreAuthorize(\"@auth.decide('...')\")\n",
                 encoding="utf-8",
             )
@@ -64,7 +65,7 @@ class ScanJavaTest(unittest.TestCase):
                 exclude_globs=("**/src/test/**", "**/service-example/**"),
             )
             codes = unique_codes(hits, ignore_codes=frozenset({"sys:xxx"}))
-            self.assertEqual(codes, ["sys:user:create", "sys:user:query"])
+            self.assertEqual(codes, ["SYS:User:Query", "sys:user:create", "sys:user:query"])
 
 
 class SeedSqlTest(unittest.TestCase):

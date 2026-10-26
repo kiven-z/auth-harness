@@ -8,11 +8,6 @@ from pathlib import Path
 
 DECIDE_PATTERN = re.compile(r"""@auth\.decide\(\s*['\"]([^'\"]+)['\"]\s*\)""")
 
-# 与 AuthCodeConvention 对齐：1～4 段，每段 * 或 [a-z][a-z0-9]*
-PERMISSION_CODE_PATTERN = re.compile(
-    r"^(?:\*|[a-z][a-z0-9]*)(?::(?:\*|[a-z][a-z0-9]*)){0,3}$"
-)
-
 
 @dataclass(frozen=True, order=True)
 class ScannedPermission:
@@ -40,10 +35,7 @@ def scan_java_permissions(
             if _is_comment_line(line):
                 continue
             for match in DECIDE_PATTERN.finditer(line):
-                code = match.group(1)
-                if not PERMISSION_CODE_PATTERN.match(code):
-                    continue
-                hits.append(ScannedPermission(code=code, relative_path=rel, line=line_no))
+                hits.append(ScannedPermission(code=match.group(1), relative_path=rel, line=line_no))
     return hits
 
 
