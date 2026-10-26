@@ -17,10 +17,10 @@ SUCCESS_CODE = 0
 INTERNAL_HEADER = "X-Internal-JWT"
 INTERNAL_MAX_TTL_SECONDS = 60
 
-_DEPT_META_KEYS = ("parentId", "deptName", "deptCode", "status", "orderNum", "remark")
+_DEPT_META_KEYS = ("parentId", "deptName", "deptCode", "orderNum", "remark")
 _ROLE_META_KEYS = ("roleCode", "roleName", "status", "orderNum", "remark")
 _PERMISSION_META_KEYS = ("permissionCode", "permissionName", "status", "orderNum", "remark")
-_POST_META_KEYS = ("deptId", "postCode", "postName", "status", "orderNum", "remark")
+_POST_META_KEYS = ("deptId", "postCode", "postName", "orderNum", "remark")
 
 
 class ApiClient:
@@ -140,7 +140,7 @@ class ApiClient:
         self._authorized_delete(paths.user_post_collection(user_id), relation_ids)
 
     def update_dept_meta(self, dept_id: int, **changes: Any) -> None:
-        """更新部门元数据（名称/父级/状态等）。"""
+        """更新部门元数据（名称/父级/编码/排序/备注）。"""
         self._update_meta(paths.DEPT, dept_id, self.get_dept_detail, _DEPT_META_KEYS, changes)
 
     def move_dept(self, dept_id: int, parent_id: int) -> None:
@@ -174,7 +174,7 @@ class ApiClient:
         )
 
     def update_post_meta(self, post_id: int, **changes: Any) -> None:
-        """更新岗位元数据（名称/排序/状态等）。"""
+        """更新岗位元数据（名称/编码/排序/所属部门/备注）。"""
         self._update_meta(paths.POST, post_id, self.get_post_detail, _POST_META_KEYS, changes)
 
     def batch_update_user_status(self, user_ids: list[int], status: int) -> None:

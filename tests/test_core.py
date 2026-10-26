@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import unittest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import yaml
@@ -194,24 +193,41 @@ class SeedSqlContractTest(unittest.TestCase):
         self.assertEqual(leftover, [])
 
 
-class EffectiveMembershipSqlContractTest(unittest.TestCase):
-    """oracle 走有效 view；查任职行打基表。"""
+class GrantSubjectSqlContractTest(unittest.TestCase):
+    """授权主体展开与部门成员查询走任职基表和部门闭包，不按部门启停过滤。"""
 
-    def test_oracle_sql_uses_effective_views(self) -> None:
+    _FORBIDDEN = (
+        "v_user_dept_effective",
+        "v_user_post_effective",
+        "v_dept_effective",
+        "v_post_effective",
+        "sys_dept.status",
+        "da.status",
+    )
+
+    def test_oracle_sql_expands_subjects_from_base_tables(self) -> None:
         from auth_harness.infrastructure.db import ORACLE_PERMISSIONS_SQL, ORACLE_ROLES_SQL
 
         for sql in (ORACLE_ROLES_SQL, ORACLE_PERMISSIONS_SQL):
-            self.assertIn("v_user_dept_effective", sql)
-            self.assertIn("v_user_post_effective", sql)
-            self.assertNotIn("status IN", sql)
+            self.assertIn("user_dept", sql)
+            self.assertIn("dept_closure", sql)
+            self.assertIn("user_post", sql)
+            self.assertIn("r.status = 1", sql)
+            for token in self._FORBIDDEN:
+                self.assertNotIn(token, sql)
+        self.assertIn("p.status = 1", ORACLE_PERMISSIONS_SQL)
 
-    def test_lookup_sql_hits_base_tables(self) -> None:
-        from auth_harness.infrastructure import db as db_mod
+    def test_dept_member_lookup_uses_base_tables(self) -> None:
+        import inspect
 
-        source = Path(db_mod.__file__).read_text(encoding="utf-8")
-        self.assertIn("FROM user_dept", source)
-        self.assertIn("FROM user_post", source)
-        self.assertNotIn("status IN (1, 2)", source)
+        from auth_harness.infrastructure.db import count_dept_members, list_dept_user_ids
+
+        for fn in (count_dept_members, list_dept_user_ids):
+            source = inspect.getsource(fn)
+            self.assertIn("user_dept", source)
+            self.assertIn("dept_closure", source)
+            for token in self._FORBIDDEN:
+                self.assertNotIn(token, source)
 
 
 class FlushHarnessProfilesTest(unittest.TestCase):

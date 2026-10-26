@@ -5,8 +5,8 @@ DELETE FROM user_post WHERE id BETWEEN 9002003000 AND 9002003099
 DELETE FROM sys_post WHERE id BETWEEN 9000600001 AND 9000600009;
 
 INSERT INTO sys_post (
-    id, dept_id, post_code, post_name, status, order_num,
+    id, dept_id, post_code, post_name, order_num,
     created_at, updated_at, created_by, updated_by, version, remark
 ) VALUES
-    (9000600001, 9000100001, 'P_FANOUT', 'Harness 扇出岗位', 1, 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
-    (9000600002, 9000100002, 'P_EDGE',   'Harness 边缘岗位', 1, 2, NOW(), NOW(), 1, 1, 0, 'auth-harness');
+    (9000600001, 9000100001, 'P_FANOUT', 'Harness 扇出岗位', 1, NOW(), NOW(), 1, 1, 0, 'auth-harness'),
+    (9000600002, 9000100002, 'P_EDGE',   'Harness 边缘岗位', 2, NOW(), NOW(), 1, 1, 0, 'auth-harness');

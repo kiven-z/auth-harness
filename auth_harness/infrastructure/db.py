@@ -16,13 +16,12 @@ WITH user_subjects AS (
     SELECT 'USER' AS sub_type, %s AS sub_id
     UNION ALL
     SELECT 'DEPT' AS sub_type, dc.ancestor_id AS sub_id
-    FROM v_user_dept_effective ud
-    JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-    JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
+    FROM user_dept ud
+    INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
     WHERE ud.user_id = %s
     UNION ALL
     SELECT 'POST' AS sub_type, up.post_id AS sub_id
-    FROM v_user_post_effective up
+    FROM user_post up
     WHERE up.user_id = %s
 )
 SELECT DISTINCT r.role_code
@@ -38,13 +37,12 @@ WITH user_subjects AS (
     SELECT 'USER' AS sub_type, %s AS sub_id
     UNION ALL
     SELECT 'DEPT' AS sub_type, dc.ancestor_id AS sub_id
-    FROM v_user_dept_effective ud
-    JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-    JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
+    FROM user_dept ud
+    INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
     WHERE ud.user_id = %s
     UNION ALL
     SELECT 'POST' AS sub_type, up.post_id AS sub_id
-    FROM v_user_post_effective up
+    FROM user_post up
     WHERE up.user_id = %s
 ),
 all_role_ids AS (
@@ -167,14 +165,13 @@ def fetch_all(
 
 
 def count_dept_members(conn: pymysql.connections.Connection, dept_id: int) -> int:
-    """统计部门子树内有效任职成员数。"""
+    """统计部门子树任职成员数（闭包含自身，不按部门启停过滤）。"""
     row = fetch_one(
         conn,
         """
         SELECT COUNT(DISTINCT ud.user_id) AS cnt
-        FROM v_user_dept_effective ud
+        FROM user_dept ud
         INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-        INNER JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
         WHERE dc.ancestor_id = %s
         """,
         (dept_id,),
@@ -183,14 +180,13 @@ def count_dept_members(conn: pymysql.connections.Connection, dept_id: int) -> in
 
 
 def list_dept_user_ids(conn: pymysql.connections.Connection, dept_id: int) -> list[int]:
-    """列出部门子树有效任职成员 userId。"""
+    """列出部门子树任职成员 userId（闭包含自身，不按部门启停过滤）。"""
     rows = fetch_all(
         conn,
         """
         SELECT DISTINCT ud.user_id
-        FROM v_user_dept_effective ud
+        FROM user_dept ud
         INNER JOIN dept_closure dc ON ud.dept_id = dc.descendant_id
-        INNER JOIN sys_dept da ON da.id = dc.ancestor_id AND da.status = 1
         WHERE dc.ancestor_id = %s
         ORDER BY ud.user_id
         """,

@@ -240,7 +240,7 @@ def delete_user_post(ctx: StepContext, params: dict[str, Any]) -> None:
 
 @register("update_dept_meta")
 def update_dept_meta(ctx: StepContext, params: dict[str, Any]) -> None:
-    """更新部门元数据（仅名称/备注等，或显式 parent/status）。"""
+    """更新部门元数据（名称、父级、编码、排序、备注）。"""
     dept_id = int(params["dept_id"])
     changes = {k: v for k, v in params.items() if k != "dept_id"}
     ctx.api.update_dept_meta(dept_id, **changes)

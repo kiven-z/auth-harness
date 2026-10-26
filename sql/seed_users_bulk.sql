@@ -1,6 +1,6 @@
 -- auth-harness: 批量用户（9001000001..9001002000）
 -- 默认密码 BCrypt("password")
--- 任职 INSERT 不含 status；须已执行 auth-server db/user-org-relation-effective-view.sql
+-- 任职以 user_dept 行为准：人在即有行，兼职只走 is_primary。
 
 DELETE FROM user_dept WHERE user_id BETWEEN 9001000001 AND 9001002100;
 DELETE FROM sys_user WHERE id BETWEEN 9001000001 AND 9001002100;
