@@ -79,7 +79,7 @@ make test          # 单元测试
 | `python -m auth_harness impact` | L1 影响面 fixture |
 | `python -m auth_harness reconcile` | 批量对账（无 Redis 画像视为尚未加载，跳过；有画像则必须与 DB 一致） |
 | `python -m auth_harness preflight` | 连通性检查 |
-| `python -m auth_harness dept-scope` | 演示账号登录，断言 `/api/example/me` 的 `deptScope` |
+| `python -m auth_harness dept-scope` | 演示账号登录，断言 `/api/example/me` 的 `dataScopes.DEPT` |
 | `python -m auth_harness dept-scope-list` | 演示账号登录，断言 `/api/example/orders` 行级过滤 |
 | `python -m auth_harness data-scope` | 数据权限冒烟：`dept-scope` → `dept-scope-list` |
 | `python -m auth_harness example-order-export` | 多账号并行提交 example_order 异步导出，轮询 SUCCESS、校验下载链接与执行窗口重叠 |
@@ -120,7 +120,7 @@ make data-scope
 # 或：python -m auth_harness data-scope --user north_chen
 ```
 
-**阶段 1 — 画像**：验证「配置 → AuthProfile.deptScope」
+**阶段 1 — 画像**：验证「配置 → AuthProfile.dataScopes.DEPT」
 
 ```bash
 make dept-scope

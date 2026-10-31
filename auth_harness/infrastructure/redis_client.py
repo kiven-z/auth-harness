@@ -71,15 +71,11 @@ def normalize_profile(profile: dict[str, Any]) -> dict[str, Any]:
     """统一字段名便于对比。"""
     roles = sorted(_unwrap_typed_list(profile.get("roles")))
     permissions = sorted(_unwrap_typed_list(profile.get("permissions")))
-    dept_scope = profile.get("deptScope") or profile.get("dept_scope")
-    if isinstance(dept_scope, list) and len(dept_scope) == 2 and isinstance(dept_scope[1], dict):
-        dept_scope = dept_scope[1]
     return {
         "userId": profile.get("userId") or profile.get("user_id"),
         "roles": roles,
         "permissions": permissions,
         "permVersion": profile.get("permVersion") or profile.get("perm_version"),
-        "deptScope": dept_scope,
     }
 
 

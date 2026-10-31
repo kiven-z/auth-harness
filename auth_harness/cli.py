@@ -170,7 +170,7 @@ def impact(ctx: click.Context, fixture_path: Path | None) -> None:
     "fixture_path",
     type=click.Path(path_type=Path, exists=True),
     default=None,
-    help="deptScope fixture（默认 fixtures/dept_scope_cases.yml）",
+    help="部门维 dataScopes fixture（默认 fixtures/dept_scope_cases.yml）",
 )
 @click.option(
     "--base-url",
@@ -185,7 +185,7 @@ def dept_scope(
     base_url: str | None,
     username: str | None,
 ) -> None:
-    """登录演示账号，断言 /api/example/me 的 AuthProfile.deptScope。"""
+    """登录演示账号，断言 /api/example/me 的 AuthProfile.dataScopes.DEPT。"""
     config = require_config(ctx)
     raise SystemExit(
         run_dept_scope_probe(
@@ -239,7 +239,7 @@ def dept_scope_list(
 @click.option("--user", "username", default=None, help="只测单个用户名")
 @click.pass_context
 def data_scope(ctx: click.Context, base_url: str | None, username: str | None) -> None:
-    """数据权限冒烟：先断言 deptScope 画像，再断言 example_order 行级过滤。"""
+    """数据权限冒烟：先断言部门维画像，再断言 example_order 行级过滤。"""
     config = require_config(ctx)
     code = run_dept_scope_probe(config, base_url=base_url, username=username)
     if code != 0:

@@ -1,4 +1,4 @@
-"""登录演示账号并断言 /api/example/me 的 AuthProfile.deptScope。"""
+"""登录演示账号并断言 /api/example/me 的 AuthProfile.dataScopes.DEPT。"""
 
 from __future__ import annotations
 
@@ -13,6 +13,8 @@ from auth_harness.config import HarnessConfig
 from auth_harness.domain.paths import HARNESS_ROOT
 
 SUCCESS_CODE = 0
+DEPT_DIMENSION = "DEPT"
+ABSENT_SCOPE_TYPE = "SELF"
 DEFAULT_FIXTURE = HARNESS_ROOT / "fixtures" / "dept_scope_cases.yml"
 DEFAULT_GATEWAY = "http://127.0.0.1:8080"
 
@@ -24,7 +26,7 @@ def run_dept_scope_probe(
     base_url: str | None = None,
     username: str | None = None,
 ) -> int:
-    """按 fixture 逐账号登录并断言 deptScope；返回失败数（0=全过）。"""
+    """按 fixture 逐账号登录并断言部门维 dataScopes；返回失败数（0=全过）。"""
     fixture = _load_fixture(fixture_path or DEFAULT_FIXTURE)
     gateway = (base_url or _gateway_from_config(config)).rstrip("/")
     password = str(fixture.get("password") or config.admin.get("password") or "Admin@123456")
@@ -82,9 +84,7 @@ def _probe_one(gateway: str, password: str, case: dict[str, Any]) -> tuple[bool,
         return False, f"请求失败: {exc}"
 
     actual_user_id = profile.get("userId")
-    dept_scope = profile.get("deptScope") or {}
-    actual_type = dept_scope.get("scopeType")
-    actual_values = {int(v) for v in (dept_scope.get("values") or [])}
+    actual_type, actual_values = dept_grant(profile)
 
     problems: list[str] = []
     if expect_user_id is not None and int(actual_user_id) != int(expect_user_id):
@@ -100,6 +100,15 @@ def _probe_one(gateway: str, password: str, case: dict[str, Any]) -> tuple[bool,
     if problems:
         return False, "; ".join(problems)
     return True, summary
+
+
+def dept_grant(profile: dict[str, Any]) -> tuple[str, set[int]]:
+    """取出部门维授权。该维未写入画像时按 SELF、空 values。"""
+    data_scopes = profile.get("dataScopes")
+    grant = data_scopes.get(DEPT_DIMENSION) if isinstance(data_scopes, dict) else None
+    if not isinstance(grant, dict):
+        return ABSENT_SCOPE_TYPE, set()
+    return str(grant.get("scopeType")), {int(v) for v in (grant.get("values") or [])}
 
 
 def _login(gateway: str, username: str, password: str) -> str:
